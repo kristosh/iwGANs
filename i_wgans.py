@@ -76,6 +76,7 @@ class WGANGP():
     def __init__(self):
             
         self.target_mod = "audio"
+        self.input_feats = "3dCNN"
 
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = 5
@@ -86,7 +87,7 @@ class WGANGP():
             self.img_cols = 112
             self.channels = 3
             self.img_shape = (self.img_rows, self.img_cols, self.channels)
-            self.latent_dim = 102
+            self.latent_dim = 38
 
             # Build the generator and critic
             self.generator = self.build_generator()
@@ -355,12 +356,13 @@ class WGANGP():
         return result
 
     def train(self, epochs, batch_size, sample_interval=50):
-        
-        train_feats, valid_feats, test_feats, train_target, valid_target, test_target, lbls_train, lbls_valid, lbls_test = lstm_data(self.target_mod, 1)
+           
+        if self.input_feats == "3dCNN":
+            (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
+            = load_3d_dataset(self.target_mod)
+        else:
+            train_feats, valid_feats, test_feats, train_target, valid_target, test_target, lbls_train, lbls_valid, lbls_test = lstm_data(self.target_mod, 1)
 
-        # (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
-        #     = load_3d_dataset(self.target_mod)
-        
         file_name = self.target_mod
         lbls_train = lbls_train[:,0:6]
       
@@ -384,10 +386,10 @@ class WGANGP():
         model_yaml_gn = self.generator_model.to_yaml()
         model_yaml_cr = self.critic_model.to_yaml()
 
-        with open("../../GANs_models/lstm_gen_noise_feats_generator_model.yaml", "w") as yaml_file:
+        with open("../../GANs_models/"+self.input_feats+"_gen_noise_feats_generator_model.yaml", "w") as yaml_file:
             yaml_file.write(model_yaml_gn)
         
-        with open("../../GANs_models/lstm_gen_noise_feats_critic_model.yaml", "w") as yaml_file:
+        with open("../../GANs_models/"+self.input_feats+"_gen_noise_feats_critic_model.yaml", "w") as yaml_file:
             yaml_file.write(model_yaml_cr)
 
         #self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test) 
@@ -409,9 +411,8 @@ class WGANGP():
                 # Sample generator input
                 noise = np.random.normal(0, 1, (batch_size, 32))
                 
-                #pdb.set_trace()
-                #conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
-                conditional_vector = batch_lbls
+                pdb.set_trace()
+                conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, conditional_vector],[valid, fake, dummy, batch_lbls])
             
@@ -430,7 +431,7 @@ class WGANGP():
             
             if epoch % sample_interval == 0:
                 self.sample_images(epoch, batch_lbls, feats, batch_size, file_name)
-                self.generator.save_weights('../../GANs_models/lstm_gen_noise_feats_'+ file_name+'_') 
+                self.generator.save_weights("../../GANs_models/"+self.input_feats+"_gen_noise_feats_"+ file_name+'_') 
 
 
     def sample_images(self, epoch, batch_lbls, feats, batch_size, file_name):
@@ -438,23 +439,23 @@ class WGANGP():
         #noise = np.random.normal(0, 1, (r * c, self.latent_dim- 6))
         #pdb.set_trace()
         noise = np.random.normal(0, 1, (batch_size, 32))
-        #conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
-        conditional_vector = batch_lbls
+        conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
+        #conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
         gen_imgs = self.generator.predict(conditional_vector)
-        store_image_maps(gen_imgs, "../../GANs_imgs/wgans/noise_lbls_" + file_name +"_new_img_%d.png" % epoch)     
+        store_image_maps(gen_imgs, "../../GANs_imgs/generated_imgs/wgans/"+self.input_feats+"_noise_lbls_" + file_name +"_new_img_%d.png" % epoch)     
 
 
     def gen_data_iwGANs(self, train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test): 
         
-        self.generator.load_weights('../../GANs_models/lstm_gen_noise_feats_')        
+        self.generator.load_weights("../../GANs_models/"+self.input_feats+"_gen_noise_feats_")        
 
         # noise = np.random.normal(0, 1, (test_feats.shape[0], 32))
         # noise = np.concatenate([test_feats, noise, lbls_test[:,0:6]], axis = 1) #noise = face_imgs
         # gen_test = self.generator.predict([noise])
         
         noise = np.random.normal(0, 1, (train_feats.shape[0], 32))
-        #noise = np.concatenate([train_feats, noise, lbls_train[:,0:6]], axis = 1) #noise = face_imgs
-        noise = lbls_train[:,0:6]
+        noise = np.concatenate([train_feats, noise, lbls_train[:,0:6]], axis = 1) #noise = face_imgs
+        #noise = lbls_train[:,0:6]
         gen_train = self.generator.predict([noise])
 
         # noise = np.random.normal(0, 1, (valid_feats.shape[0], 32))
