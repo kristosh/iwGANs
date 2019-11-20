@@ -18,7 +18,7 @@ import pdb
 
 def load_my_dataset(fold_index):
 
-    temp_path = 'models/tmp_dtst/complete_'+str(fold_index)+'.pkl'
+    temp_path = '../../GANs_models/tmp_dtst/complete_'+str(fold_index)+'.pkl'
     my_3d_dict = load_obj(temp_path)
 
     train_feats = my_3d_dict["feats_train"]
@@ -27,7 +27,7 @@ def load_my_dataset(fold_index):
 
     target_train = (target_train.astype(np.float32) - 127.5)/127.5
 
-    temp_path = 'models/tmp_dtst/complete_7.pkl'
+    temp_path = '../../GANs_models/tmp_dtst/complete_7.pkl'
     my_3d_dict = load_obj(temp_path)
 
     test_feats = my_3d_dict["feats_train"]
@@ -59,24 +59,24 @@ def lstm_main():
     model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
     
 
-    # tmp_ = load_obj('models/tmp_dtst/lstm_1.pkl')
+    tmp_ = load_obj('../../GANs_models/tmp_dtst/lstm_1.pkl')
     
-    # feats_train = tmp_['feats_train']
-    # lbls_train = tmp_['lbls_train']
-    # target_train = tmp_['target_train']
+    feats_train = tmp_['feats_train']
+    lbls_train = tmp_['lbls_train']
+    target_train = tmp_['target_train']
 
-    # pdb.set_trace()
-    # for fold_indx in range(1, 6):
-    #     train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = load_my_dataset(fold_indx)
-    #     model.fit(train_feats, lbls_train, epochs=15, batch_size=64)
-    #     tensorboard.set_model(model)
-    #     pred_feats_test = model.predict(test_feats)
-    #     c_loss = model.evaluate(test_feats, lbls_test) 
-    #     print (c_loss)
+    pdb.set_trace()
+    for fold_indx in range(1, 6):
+        train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = load_my_dataset(fold_indx)
+        model.fit(train_feats, lbls_train, epochs=15, batch_size=64)
+        tensorboard.set_model(model)
+        pred_feats_test = model.predict(test_feats)
+        c_loss = model.evaluate(test_feats, lbls_test) 
+        print (c_loss)
 
-    # pdb.set_trace()
-    # model.save_weights("lstm_weights")
-    model.load_weights("lstm_weights")
+    pdb.set_trace()
+    model.save_weights("../../GANs_models/lstm_weights")
+    model.load_weights("../../GANs_models/lstm_weights")
     
     model.pop()
     #pdb.set_trace()
@@ -87,7 +87,7 @@ def lstm_main():
         pred_feats_train = model.predict(train_feats)
         pred_feats_test= model.predict(test_feats)
         dataset_dict1 = {"feats_train":pred_feats_train,"lbls_train": lbls_train, "target_train": target_train}
-        store_obj("models/tmp_dtst/lstm_"+str(fold_indx)+".pkl", dataset_dict1)
+        store_obj("../../GANs_models/tmp_dtst/lstm_"+str(fold_indx)+".pkl", dataset_dict1)
 
     pdb.set_trace()
 

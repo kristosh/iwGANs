@@ -6,7 +6,7 @@ from __future__ import print_function, division
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 from keras.datasets import mnist
 from keras.layers.merge import _Merge
@@ -18,6 +18,7 @@ from keras.models import Sequential, Model
 from keras.optimizers import RMSprop
 from functools import partial
 from sklearn.utils import shuffle
+from keras.models import model_from_yaml
 
 import keras.backend as K
 import tensorflow.keras as keras
@@ -87,7 +88,7 @@ class WGANGP():
             self.img_cols = 112
             self.channels = 3
             self.img_shape = (self.img_rows, self.img_cols, self.channels)
-            self.latent_dim = 38
+            self.latent_dim = 102
 
             # Build the generator and critic
             self.generator = self.build_generator()
@@ -354,9 +355,23 @@ class WGANGP():
         for l in zip(model.metrics_names, logs):
             result[l[0]] = l[1]
         return result
+    
+    def load_model_from_yaml(self, file_name):
+
+        yaml_model = open(file_name, 'r')
+        loaded_model_yaml = yaml_model.read()
+        yaml_model.close()
+        loaded_model = model_from_yaml(loaded_model_yaml)
+
+        return loaded_model
+
 
     def train(self, epochs, batch_size, sample_interval=50):
-           
+        
+        my_model = self.load_model_from_yaml("../../GANs_models/"+self.input_feats+"_gen_noise_feats_generator_model.yaml")
+        print(my_model.summary())
+        pdb.set_trace()
+
         if self.input_feats == "3dCNN":
             (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
             = load_3d_dataset(self.target_mod)
@@ -410,8 +425,7 @@ class WGANGP():
                 feats = train_feats[idx]
                 # Sample generator input
                 noise = np.random.normal(0, 1, (batch_size, 32))
-                
-                pdb.set_trace()
+            
                 conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, conditional_vector],[valid, fake, dummy, batch_lbls])
@@ -457,7 +471,7 @@ class WGANGP():
         noise = np.concatenate([train_feats, noise, lbls_train[:,0:6]], axis = 1) #noise = face_imgs
         #noise = lbls_train[:,0:6]
         gen_train = self.generator.predict([noise])
-
+   
         # noise = np.random.normal(0, 1, (valid_feats.shape[0], 32))
         # noise = np.concatenate([valid_feats, noise, lbls_valid[:,0:6]], axis = 1) #noise = face_imgs
         # gen_valid = self.generator.predict([noise])
@@ -473,5 +487,6 @@ class WGANGP():
         pdb.set_trace()
 
 if __name__ == '__main__':
+
     wgan = WGANGP()
     wgan.train(epochs=50000, batch_size=32, sample_interval=100)
