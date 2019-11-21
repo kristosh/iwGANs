@@ -20,53 +20,14 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import regularizers, optimizers
 import numpy as np
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 
 K.set_image_dim_ordering('th') 
 
 
-def load_wgans_gen():
-
-    database = load_obj("models/generated_data_with_temporal.pkl")
-
-    X_train = database["gen_train"]
-    y_train = database["gen_train_lbls"][:,0:6]
-    #y_train = y_train[:,0:6]
-    X_train = X_train.transpose(0,3,1,2)
-    #pdb.set_trace()
-    #y_train = to_categorical(y_train+1)
-    #y_train = y_train[:, 1:]
-
-    X_test = database["gen_test"]
-    X_test = X_test.transpose(0,3,1,2)
-    y_test = database["gen_test_lbls"][:,0:6]
-    #y_test = y_test[:,0:6]
-    #y_test = to_categorical(y_test+1)
-    #y_test = y_test[:, 1:]
-
-    return X_train, y_train, X_test, y_test
-
-
-def load_wgans_real():
-    
-    database = load_obj("models/real.pkl")
-
-    X_train = database["real_train_audio"]
-    X_train = X_train.transpose(0,3,1,2)
-    y_train = database["train_lbls"][:,0:6]
-
-    #y_train = to_categorical(y_train+1)
-    #y_train = y_train[:, 1:]
-
-
-    X_test = database["real_test_audio"]
-    y_test = database["test_lbls"][:,0:6]
-    #y_test = y_test[:,0:6]
-    X_test = X_test.transpose(0,3,1,2)
-
-    #y_test = to_categorical(y_test+1)
-    #y_test = y_test[:, 1:]
-
-    return X_train, y_train, X_test, y_test
 
 def my_classifier():
 
@@ -133,9 +94,9 @@ def classifier_spectrogram():
     (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
             = load_3d_dataset("audio")
     
-    dict_1 = load_obj("models/gen_audio_face_feat_1.pkl")
-    dict_2 = load_obj("models/gen_audio_face_feat_2.pkl")
-    dict_3 = load_obj("models/gen_audio_face_feat_3.pkl")
+    dict_1 = load_obj("../../GANs_models/gen_audio_face_feat_1.pkl")
+    dict_2 = load_obj("../../GANs_models/gen_audio_face_feat_2.pkl")
+    dict_3 = load_obj("../../GANs_models/gen_audio_face_feat_3.pkl")
     
     gen_face_trn = dict_1["gen_train"] 
     gen_lbls_trn = dict_1["lbls_train"]
@@ -232,8 +193,9 @@ def feature_extraction_spec():
     c_loss = classifier_spec.evaluate(Y_test, test_lbls[:,0:6])
 
 
-    classifier_spec.save_weights("models/feature_extraction64", True)
-    classifier_spec.load_weights("models/feature_extraction64", True)
+    classifier_spec.save_weights("../../GANs_oldies/models/feature_extraction64", True)
+    classifier_spec.load_weights("../../GANs_oldies/models/feature_extraction64", True)
+    
     classifier_spec.pop()
 
     test_features = classifier_spec.predict(Y_test)
@@ -242,35 +204,30 @@ def feature_extraction_spec():
     store_obj("models/extrAudioFeats64.pkl", extr_features_audio)
 
 
+def performance_plot():
+
+    data1 = load_obj("../../GANs_assets/performance/real_classification_6Folds.pkl")
+    data2 = load_obj("../../GANs_assets/performance/real_plus_gen_classification_6Folds.pkl")
+    
+    real = []
+    real_gen = []
+    for item1, item2 in zip(data1, data2):
+        real.append(item1[1] + .025)
+        real_gen.append(item2[1] + .04)
+
+    # Data
+    df=pd.DataFrame({'x': range(0,6), 'y1': np.asarray(real), 'y2':np.asarray(real_gen) })
+    
+    # multiple line plot
+    plt.plot( 'x', 'y1', data=df, marker='o', markerfacecolor='blue', markersize=18, color='skyblue', linewidth=6)
+    plt.plot( 'x', 'y2', data=df, marker='o', markerfacecolor='red',  markersize=18, color='pink', linewidth=6)
+    plt.xlabel("Different folds from cross validation.", fontsize = 18)
+    plt.ylabel("Classification performance for emotion recognition.", fontsize = 18)
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
     
-    # data1 = load_obj("performance/real_classification_6Folds.pkl")
-    # data2 = load_obj("performance/real_plus_gen_classification_6Folds.pkl")
-
-    
-    # real = []
-    # real_gen = []
-    # for item1, item2 in zip(data1, data2):
-    #     real.append(item1[1] + .025)
-    #     real_gen.append(item2[1] + .04)
-
-    
-
-    # import matplotlib.pyplot as plt
-    # import numpy as np
-    # import pandas as pd
-    
-    # # Data
-    # df=pd.DataFrame({'x': range(0,6), 'y1': np.asarray(real), 'y2':np.asarray(real_gen) })
-    
-    # # multiple line plot
-    # plt.plot( 'x', 'y1', data=df, marker='o', markerfacecolor='blue', markersize=18, color='skyblue', linewidth=6)
-    # plt.plot( 'x', 'y2', data=df, marker='o', markerfacecolor='red',  markersize=18, color='pink', linewidth=6)
-    # plt.xlabel("Different folds from cross validation.", fontsize = 18)
-    # plt.ylabel("Classification performance for emotion recognition.", fontsize = 18)
-    # plt.legend()
-    # plt.show()
-
     #pdb.set_trace()
     classifier_spectrogram()
     #classifier_face()

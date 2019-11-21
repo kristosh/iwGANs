@@ -39,6 +39,18 @@ def load_my_dataset(fold_index):
     return train_feats, lbls_train, target_train, test_feats, lbls_test, target_test
 
 
+def lstm_model():
+    
+    model = Sequential()
+    model.add(LSTM(units = 256, input_shape = (10, 256), return_sequences = False, dropout = 0.5))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dense(64, activation='sigmoid'))
+    model.add(Dense(6, activation='sigmoid'))
+
+    print(model.summary())
+    return model
+
+
 def lstm_main():
 
     tensorboard = keras.callbacks.TensorBoard(
@@ -49,11 +61,12 @@ def lstm_main():
             write_grads=True
         )
 
-    model = Sequential()
-    model.add(LSTM(units = 256, input_shape = (10, 256), return_sequences = False, dropout = 0.5))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dense(64, activation='sigmoid'))
-    model.add(Dense(6, activation='sigmoid'))
+    model = lstm_model()
+    # model = Sequential()
+    # model.add(LSTM(units = 256, input_shape = (10, 256), return_sequences = False, dropout = 0.5))
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dense(64, activation='sigmoid'))
+    # model.add(Dense(6, activation='sigmoid'))
 
     print(model.summary())
     model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])

@@ -370,7 +370,6 @@ class WGANGP():
         
         my_model = self.load_model_from_yaml("../../GANs_models/"+self.input_feats+"_gen_noise_feats_generator_model.yaml")
         print(my_model.summary())
-        pdb.set_trace()
 
         if self.input_feats == "3dCNN":
             (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
@@ -385,6 +384,10 @@ class WGANGP():
         valid = -np.ones((batch_size, 1))
         fake =  np.ones((batch_size, 1))
         dummy = np.zeros((batch_size, 1)) # Dummy gt for gradient penalty
+
+
+        self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test) 
+        pdb.set_trace()
 
         # Create the TensorBoard callback,
         # which we will drive manually
@@ -407,14 +410,12 @@ class WGANGP():
         with open("../../GANs_models/"+self.input_feats+"_gen_noise_feats_critic_model.yaml", "w") as yaml_file:
             yaml_file.write(model_yaml_cr)
 
-        #self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test) 
         for epoch in range(epochs):
 
             if epoch == 55000:
                 self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test)
 
             for _ in range(self.n_critic):
-
                 # ---------------------
                 #  Train Discriminator
                 # ---------------------
@@ -456,34 +457,27 @@ class WGANGP():
         conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
         #conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
         gen_imgs = self.generator.predict(conditional_vector)
-        store_image_maps(gen_imgs, "../../GANs_imgs/generated_imgs/wgans/"+self.input_feats+"_noise_lbls_" + file_name +"_new_img_%d.png" % epoch)     
+        store_image_maps(gen_imgs, "../../GANs_assets/generated_imgs/wgans/"+self.input_feats+"_noise_lbls_" + file_name +"_new_img_%d.png" % epoch)     
 
 
     def gen_data_iwGANs(self, train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test): 
         
-        self.generator.load_weights("../../GANs_models/"+self.input_feats+"_gen_noise_feats_")        
-
-        # noise = np.random.normal(0, 1, (test_feats.shape[0], 32))
-        # noise = np.concatenate([test_feats, noise, lbls_test[:,0:6]], axis = 1) #noise = face_imgs
-        # gen_test = self.generator.predict([noise])
+        self.generator.load_weights("../../GANs_models/"+self.input_feats+"_gen_noise_feats_"+self.target_mod+"_")        
         
         noise = np.random.normal(0, 1, (train_feats.shape[0], 32))
         noise = np.concatenate([train_feats, noise, lbls_train[:,0:6]], axis = 1) #noise = face_imgs
         #noise = lbls_train[:,0:6]
         gen_train = self.generator.predict([noise])
    
-        # noise = np.random.normal(0, 1, (valid_feats.shape[0], 32))
-        # noise = np.concatenate([valid_feats, noise, lbls_valid[:,0:6]], axis = 1) #noise = face_imgs
-        # gen_valid = self.generator.predict([noise])
         gen_data1 = {"gen_train": gen_train[:75000], "lbls_train": lbls_train[:75000]}
         gen_data2 = {"gen_train": gen_train[75001:150000], "lbls_train": lbls_train[75001:150000]}
         gen_data3 = {"gen_train": gen_train[150001:225000], "lbls_train": lbls_train[150001:225000]}
         gen_data4 = {"gen_train": gen_train[225000:], "lbls_train": lbls_train[225000:]}
 
-        store_obj("../../GANs_models/lstm_gen_audio_face_feat_1.pkl", gen_data1)
-        store_obj("../../GANs_models/lstm_gen_audio_face_feat_2.pkl", gen_data2)
-        store_obj("../../GANs_models/lstm_gen_audio_face_feat_3.pkl", gen_data3)
-        store_obj("../../GANs_models/lstm_gen_audio_face_feat_4.pkl", gen_data4)
+        store_obj("../../GANs_models/"+self.input_feats+"_gen_audio_face_feat_1.pkl", gen_data1)
+        store_obj("../../GANs_models/"+self.input_feats+"_gen_audio_face_feat_2.pkl", gen_data2)
+        store_obj("../../GANs_models/"+self.input_feats+"_gen_audio_face_feat_3.pkl", gen_data3)
+        store_obj("../../GANs_models/"+self.input_feats+"_gen_audio_face_feat_4.pkl", gen_data4)
         pdb.set_trace()
 
 if __name__ == '__main__':
