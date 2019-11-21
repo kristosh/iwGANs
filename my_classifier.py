@@ -94,9 +94,9 @@ def classifier_spectrogram():
     (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
             = load_3d_dataset("audio")
     
-    dict_1 = load_obj("../../GANs_models/gen_audio_face_feat_1.pkl")
-    dict_2 = load_obj("../../GANs_models/gen_audio_face_feat_2.pkl")
-    dict_3 = load_obj("../../GANs_models/gen_audio_face_feat_3.pkl")
+    dict_1 = load_obj("../../GANs_models/3dCNN_gen_audio_face_feat_1.pkl")
+    dict_2 = load_obj("../../GANs_models/3dCNN_gen_audio_face_feat_2.pkl")
+    #dict_3 = load_obj("../../GANs_models/3dCNN_gen_audio_face_feat_3.pkl")
     
     gen_face_trn = dict_1["gen_train"] 
     gen_lbls_trn = dict_1["lbls_train"]
@@ -104,8 +104,8 @@ def classifier_spectrogram():
     gen_face_trn_2 = dict_2["gen_train"] 
     gen_lbls_trn_2= dict_2["lbls_train"]
 
-    gen_face_trn_3 = dict_3["gen_train"] 
-    gen_lbls_trn_3= dict_3["lbls_train"]
+    # gen_face_trn_3 = dict_3["gen_train"] 
+    # gen_lbls_trn_3= dict_3["lbls_train"]
     # #gen_face_tst = dict_["gen_test"] 
     # #gen_lbls_tst = dict_["gen_test_lbls"]
 
@@ -114,15 +114,16 @@ def classifier_spectrogram():
     
     gen_face_trn = gen_face_trn.transpose(0, 3, 1, 2)
     gen_face_trn_2 = gen_face_trn_2.transpose(0, 3, 1, 2)
-    gen_face_trn_3 = gen_face_trn_3.transpose(0, 3, 1, 2)
+    #gen_face_trn_3 = gen_face_trn_3.transpose(0, 3, 1, 2)
     #gen_face_tst = gen_face_tst.transpose(0, 3, 1, 2)
+    dict_1 = None
+    dict_2 = None
     
     train_data = np.concatenate((train_target[:150000], gen_face_trn, gen_face_trn_2), axis=0)
     label_train_ = np.concatenate((lbls_train[:150000,0:6], gen_lbls_trn, gen_lbls_trn_2), axis=0)
 
     #train_data = train_target[:150000]
     #label_train_ = lbls_train[:150000]
-
     error_list = []
     for i in range(0,6):
         classifier = my_classifier()
@@ -193,9 +194,9 @@ def feature_extraction_spec():
     c_loss = classifier_spec.evaluate(Y_test, test_lbls[:,0:6])
 
 
-    classifier_spec.save_weights("../../GANs_oldies/models/feature_extraction64", True)
-    classifier_spec.load_weights("../../GANs_oldies/models/feature_extraction64", True)
-    
+    classifier_spec.save_weights("../../GANs_cnn/models/feature_extraction64", True)
+    classifier_spec.load_weights("../../GANs_cnn/models/feature_extraction64", True)
+
     classifier_spec.pop()
 
     test_features = classifier_spec.predict(Y_test)

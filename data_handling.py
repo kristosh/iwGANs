@@ -286,7 +286,7 @@ def load_3d_dataset(target):
 
     if target == "audio":
 
-        data = load_obj("../../GANs_simple_classifier/models/complete.pkl") 
+        data = load_obj("../../GANs_cnn/models/complete.pkl") 
 
         train_feats= data["face_train"][:350000]
         train_target = data["specs_train"][:350000]
