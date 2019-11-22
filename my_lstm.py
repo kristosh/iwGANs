@@ -20,7 +20,7 @@ class my_LSTM():
 
     def __init__(self):
 
-        self.no_of_layers = 64
+        self.no_of_layers = 32
 
     def load_my_dataset(self, fold_index):
 
@@ -72,12 +72,7 @@ class my_LSTM():
         print(model.summary())
         model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
-        dict_ = load_obj('../../GANs_models/tmp_dtst/lstm_1.pkl')
         
-        feats_train = dict_['feats_train']
-        lbls_train = dict_['lbls_train']
-        target_train = dict_['target_train']
-
         for fold_indx in range(1, 6):
             train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset(fold_indx)
             model.fit(train_feats, lbls_train, epochs=15, batch_size=64)
@@ -86,20 +81,19 @@ class my_LSTM():
             c_loss = model.evaluate(test_feats, lbls_test) 
             print (c_loss)
 
-        
-        pdb.set_trace()
 
         model.save_weights("../../GANs_models/lstm_weights_"+str(self.no_of_layers))
         model.load_weights("../../GANs_models/lstm_weights_"+str(self.no_of_layers))
         model.pop()
-    
+
+        pdb.set_trace()
         for fold_indx in range(1, 8):
 
             train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset(fold_indx)
             pred_feats_train = model.predict(train_feats)
             pred_feats_test= model.predict(test_feats)
             dataset_dict1 = {"feats_train":pred_feats_train,"lbls_train": lbls_train, "target_train": target_train}
-            store_obj("../../GANs_models/tmp_dtst/lstm_128_"+str(fold_indx)+".pkl", dataset_dict1)
+            store_obj("../../GANs_models/tmp_dtst/lstm_"+str(self.no_of_layers)+"_"+str(fold_indx)+".pkl", dataset_dict1)
 
         pdb.set_trace()
 

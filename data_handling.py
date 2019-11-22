@@ -244,21 +244,21 @@ def crossValidFiles(filename):
 
     return face, audio, lbls
 
-def lstm_data(target, fold_indx):
+def lstm_data(target, fold_indx, size_of_feats):
 
-    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(fold_indx)+".pkl")
+    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(size_of_feats)+"_"+str(fold_indx)+".pkl")
 
     train_feats1= data["feats_train"]
     train_target1 = data["target_train"]
     lbls_train1 = data["lbls_train"]
 
-    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(fold_indx+1)+".pkl")
+    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(size_of_feats)+"_"+str(fold_indx+1)+".pkl")
 
     train_feats2= data["feats_train"]
     train_target2 = data["target_train"]
     lbls_train2 = data["lbls_train"]
 
-    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(fold_indx+2)+".pkl")
+    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(size_of_feats)+"_"+str(fold_indx+2)+".pkl")
 
     train_feats3= data["feats_train"]
     train_target3 = data["target_train"]
@@ -268,13 +268,13 @@ def lstm_data(target, fold_indx):
     train_target = np.concatenate((train_target1, train_target2, train_target3), axis =0)
     lbls_train = np.concatenate((lbls_train1, lbls_train2, lbls_train3), axis = 0)
 
-    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(fold_indx+3)+".pkl")
+    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(size_of_feats)+"_"+str(fold_indx+3)+".pkl")
 
     test_feats= data["feats_train"]
     test_target = data["target_train"]
     lbls_test = data["lbls_train"]
 
-    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(fold_indx+4)+".pkl")
+    data = load_obj("../../GANs_models/tmp_dtst/lstm_"+str(size_of_feats)+"_"+str(fold_indx+4)+".pkl")
 
     valid_feats= data["feats_train"]
     valid_target = data["target_train"]

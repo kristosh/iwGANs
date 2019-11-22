@@ -79,7 +79,8 @@ class WGANGP():
         self.target_mod = "audio"
         self.input_feats = "lstm"
         self.learning_param = 0.001
-        self.no_of_trial = "A"
+        self.no_of_trial = "B"
+        self.no_input_feats = 64
 
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = 5
@@ -375,11 +376,12 @@ class WGANGP():
         # print(my_model.summary())
 
         if self.input_feats == "3dCNN":
-            (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
-            = load_3d_dataset(self.target_mod)
+            (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) = load_3d_dataset(self.target_mod)
         else:
-            train_feats, valid_feats, test_feats, train_target, valid_target, test_target, lbls_train, lbls_valid, lbls_test = lstm_data(self.target_mod, 1)
+            train_feats, valid_feats, test_feats, train_target, valid_target, test_target, lbls_train, lbls_valid, lbls_test = lstm_data(self.target_mod, 1, self.no_input_feats)
 
+
+        pdb.set_trace()
         file_name = self.target_mod
         lbls_train = lbls_train[:,0:6]
       
