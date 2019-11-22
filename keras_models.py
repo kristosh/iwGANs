@@ -8,6 +8,7 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D, Deconvolutio
 from keras.layers.core import Flatten
 from keras.layers import Input, merge, Convolution2D, MaxPooling2D, UpSampling2D, ZeroPadding2D
 from keras.layers import LeakyReLU
+from keras.layers import LSTM
 
 from skimage.transform import resize
 from normalization import BatchNormGAN

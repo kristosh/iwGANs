@@ -41,7 +41,7 @@ class my_cnn_classifier():
         self.batch_size = 128
         self.nClasses = 6
         self.c_optim = RMSprop(lr=0.0001, decay=1e-6)
-        self.epochs = 30
+        self.epochs = 15
 
 
     def load_gen_data(self):
@@ -67,13 +67,14 @@ class my_cnn_classifier():
 
         gen_1, gen_2, gen_3, gen_lbls_1, gen_lbls_2, gen_lbls_3 = self.load_gen_data()
 
-        train_data = np.concatenate((train_target,  gen_1, gen_2), axis=0)
-        train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1, gen_lbls_2), axis=0)
+        #train_data = np.concatenate((train_target,  gen_1, gen_2), axis=0)
+        #train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1, gen_lbls_2), axis=0)
 
         test_data = test_target 
         test_labels = lbls_test[:,0:6]
 
-        pdb.set_trace()
+        train_data = train_target
+        train_labels = lbls_train[:150000,0:6]
         
         del train_feats
         del train_target
@@ -102,16 +103,17 @@ class my_cnn_classifier():
         for iteration in range(0,6):
             model.compile(optimizer=self.c_optim, loss='categorical_crossentropy', metrics=['accuracy'])
             history = model.fit(train_data, train_labels, batch_size=self.batch_size, epochs = self.epochs, verbose=1, validation_data=(train_data, train_labels))      
-            pdb.set_trace()
+            
             c_loss = model.evaluate(test_data, lbls_test[:,0:6]) 
-            y_pred = model.predict(test_data)
-            total_loss.append(c_loss)      
-            cnf_matrix = self.plot_confusion_matrix(y_pred, lbls_test[:,0:6], iteration)
-            total_cm.append(cnf_matrix)
-            pdb.set_trace()
+            print (c_loss)
+            # y_pred = model.predict(test_data)
+            # total_loss.append(c_loss)      
+            # cnf_matrix = self.plot_confusion_matrix(y_pred, lbls_test[:,0:6], iteration)
+            # total_cm.append(cnf_matrix)
+            # pdb.set_trace()
 
-        store_obj("total_loss.pkl", total_loss)
-        store_obj("total_cm.pkl", total_cm)
+        # store_obj("total_loss.pkl", total_loss)
+        # store_obj("total_cm.pkl", total_cm)
 
 
     def plot_confusion_matrix(self, y_pred, test_labels, iteration):
