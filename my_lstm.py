@@ -13,6 +13,7 @@ import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 from data_handling import *
+from keras_models import *
 import pdb
 
 
@@ -44,19 +45,6 @@ class my_LSTM():
 
         return train_feats, lbls_train, target_train, test_feats, lbls_test, target_test
 
-
-    def lstm_model(self):
-        
-        model = Sequential()
-        model.add(LSTM(units = 256, input_shape = (10, 256), return_sequences = False, dropout = 0.5))
-        model.add(Dense(self.no_of_layers, activation='sigmoid'))
-        #model.add(Dense(64, activation='sigmoid'))
-        model.add(Dense(6, activation='sigmoid'))
-
-        print(model.summary())
-        return model
-
-
     def lstm_main(self):
 
         tensorboard = keras.callbacks.TensorBoard(
@@ -67,7 +55,7 @@ class my_LSTM():
                 write_grads=True
             )
 
-        model = self.lstm_model()
+        model = lstm_model(self.no_of_layers)
 
         print(model.summary())
         model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])

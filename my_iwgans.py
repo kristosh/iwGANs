@@ -94,9 +94,9 @@ class WGANGP():
             self.latent_dim = 54
 
             # Build the generator and critic
-            self.generator = self.build_generator()
+            self.generator = build_generator(self.latent_dim, self.channels)
             #self.generator = self.build_generator_old()
-            self.critic = self.build_critic()
+            self.critic = build_critic(self.img_shape)
         elif self.target_mod == "face":
            
             self.img_rows = 28
@@ -106,9 +106,9 @@ class WGANGP():
             self.latent_dim = 38 #550
 
             # Build the generator and critic
-            self.generator = self.build_generator_face()
+            self.generator = build_generator_face(self.latent_dim, self.channels)
             #self.generator = self.build_generator_old()
-            self.critic = self.build_critic()
+            self.critic = build_critic(self.img_shape)
 
         #-------------------------------
         # Construct Computational Graph
@@ -191,166 +191,6 @@ class WGANGP():
 
     def wasserstein_loss(self, y_true, y_pred):
         return K.mean(y_true * y_pred)
-    
-    def build_generator_old(self):
-
-        inputs = Input((self.latent_dim,))
-        e0 = Dense(128 * 7 * 7, activation="relu")(inputs)
-        e1 = Reshape((7, 7, 128))(e0)
-        e2 = UpSampling2D()(e1)
-        
-        e3 = Convolution2D(128, 4, 4, activation='linear',init='uniform', border_mode='same')(e2)
-        e3 = BatchNormalization(momentum = 0.8)(e3)
-        e3 =  Activation('relu')(e3)
-        e3 = UpSampling2D()(e3)
-        
-        e4 = Convolution2D(64, 4, 4, activation='linear',init='uniform', border_mode='same')(e3)
-        e4 = BatchNormalization(momentum = 0.8)(e4)
-        e4 =  Activation('relu')(e4)
-        e4 = UpSampling2D(size=(1, 2))(e4)
-
-        e5 = Convolution2D(64, 4, 4, activation='linear',init='uniform', border_mode='same')(e4)
-        e5 = BatchNormalization(momentum = 0.8)(e5)
-        e5 =  Activation('relu')(e5)
-        e5 = UpSampling2D(size=(1, 2))(e5)
-
-        e6 = Convolution2D(3, 4, 4, activation='linear',init='uniform', border_mode='same')(e5)
-        e6 = Activation("tanh")(e6)
-
-        model = Model(input=inputs, output=e6)
-        return model
-
-
-    def build_generator_face(self):
-
-        model = Sequential()
-        #pdb.set_trace()
-        model.add(Dense(128 * 7 * 7, activation="relu", input_shape=(None, self.latent_dim))) #input_dim
-        model.add(Reshape((7, 7, 128)))
-        model.add(UpSampling2D())
-        model.add(Conv2D(128, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-        model.add(UpSampling2D())
-        model.add(Conv2D(64, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-
-        #model.add(UpSampling2D(size=(1, 2)))
-        model.add(Conv2D(64, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-
-        #model.add(UpSampling2D(size=(1, 2)))
-        model.add(Conv2D(64, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-
-        model.add(Conv2D(self.channels, kernel_size=4, padding="same"))
-        model.add(Activation("tanh"))
-
-        model.summary()
-
-        noise = Input(shape=(self.latent_dim,))
-        img = model(noise)
-
-        mdl = Model(noise, output = img)
-
-        return mdl
-
-    def build_generator(self):
-
-        model = Sequential()
-        #pdb.set_trace()
-        model.add(Dense(128 * 7 * 7, activation="relu", input_shape=(None, self.latent_dim))) #input_dim
-        model.add(Reshape((7, 7, 128)))
-        model.add(UpSampling2D())
-        model.add(Conv2D(128, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-        model.add(UpSampling2D())
-        model.add(Conv2D(128, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-
-        model.add(UpSampling2D(size=(1, 2)))
-        model.add(Conv2D(64, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-
-        model.add(UpSampling2D(size=(1, 2)))
-        model.add(Conv2D(64, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu"))
-
-        model.add(Conv2D(64, kernel_size=4, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(Activation("relu")) 
-        #
-
-        # model.add(Conv2D(64, kernel_size=4, padding="same"))
-        # model.add(BatchNormalization(momentum=0.8))
-        # model.add(Activation("relu"))
-
-        # model.add(Conv2D(64, kernel_size=4, padding="same"))
-        # model.add(BatchNormalization(momentum=0.8))
-        # model.add(Activation("relu"))
-
-        model.add(Conv2D(self.channels, kernel_size=4, padding="same"))
-        model.add(Activation("tanh"))
-
-        model.summary()
-
-        noise = Input(shape=(self.latent_dim,))
-        img = model(noise)
-
-        mdl = Model(noise, output = img)
-
-        return mdl
-
-
-    def build_critic(self):
-
-        model = Sequential()
-
-        model.add(Conv2D(16, kernel_size=3, strides=2, input_shape=self.img_shape, padding="same"))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dropout(0.25))
-        model.add(Conv2D(32, kernel_size=3, strides=2, padding="same"))
-        model.add(ZeroPadding2D(padding=((0,1),(0,1))))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dropout(0.25))
-        model.add(Conv2D(64, kernel_size=3, strides=2, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dropout(0.25))
-        model.add(Conv2D(128, kernel_size=3, strides=1, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(LeakyReLU(alpha=0.2))
-        model.add(Dropout(0.25))
-        model.add(Conv2D(128, kernel_size=3, strides=1, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(LeakyReLU(alpha=0.2))
-
-        model.add(Conv2D(128, kernel_size=3, strides=1, padding="same"))
-        model.add(BatchNormalization(momentum=0.8))
-        model.add(LeakyReLU(alpha=0.2))
-
-        # model.add(Conv2D(256, kernel_size=3, strides=1, padding="same"))
-        # model.add(BatchNormalization(momentum=0.8))
-        # model.add(LeakyReLU(alpha=0.2))
-
-        model.add(Dropout(0.25))
-        model.add(Flatten())
-
-        image = Input(shape=self.img_shape)
-        features = model(image)
-        
-        fake = Dense(1, activation='linear', name='generation')(features)
-        aux = Dense(6, activation='softmax', name='auxiliary')(features)
-
-        return Model(input = [image], output=[fake, aux])
 
     
     def named_logs(self, model, logs):
