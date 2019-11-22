@@ -20,7 +20,7 @@ class my_LSTM():
 
     def __init__(self):
 
-        self.no_of_layers = 32
+        self.no_of_layers = 128
 
     def load_my_dataset_lstm(self, fold_index):
 
@@ -49,7 +49,7 @@ class my_LSTM():
         
         model = Sequential()
         model.add(LSTM(units = 256, input_shape = (10, 256), return_sequences = False, dropout = 0.5))
-        model.add(Dense(self.no_of_layers, activation='relu'))
+        model.add(Dense(self.no_of_layers, activation='sigmoid'))
         #model.add(Dense(64, activation='sigmoid'))
         model.add(Dense(6, activation='sigmoid'))
 

@@ -80,7 +80,7 @@ class WGANGP():
         self.input_feats = "lstm"
         self.learning_param = 0.001
         self.no_of_trial = "B"
-        self.no_input_feats = 64
+        self.no_input_feats = 32
 
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = 5
@@ -91,7 +91,7 @@ class WGANGP():
             self.img_cols = 112
             self.channels = 3
             self.img_shape = (self.img_rows, self.img_cols, self.channels)
-            self.latent_dim = 86
+            self.latent_dim = 54
 
             # Build the generator and critic
             self.generator = self.build_generator()
@@ -380,7 +380,6 @@ class WGANGP():
         else:
             train_feats, valid_feats, test_feats, train_target, valid_target, test_target, lbls_train, lbls_valid, lbls_test = lstm_data(self.target_mod, 1, self.no_input_feats)
 
-
         pdb.set_trace()
         file_name = self.target_mod
         lbls_train = lbls_train[:,0:6]
@@ -393,7 +392,8 @@ class WGANGP():
 
         #self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test) 
         #pdb.set_trace()
-
+        del valid_target
+        del test_target
         # Create the TensorBoard callback,
         # which we will drive manually
         tensorboard = keras.callbacks.TensorBoard(
@@ -424,7 +424,7 @@ class WGANGP():
 
         for epoch in range(epochs):
 
-            if epoch == 55000:
+            if epoch == 255000:
                 self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test)
 
             for _ in range(self.n_critic):

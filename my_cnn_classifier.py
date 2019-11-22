@@ -4,7 +4,7 @@ import os
 def cls(): os.system('clear')
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 import numpy as np
 import matplotlib
@@ -67,8 +67,6 @@ class my_cnn_classifier():
 
         gen_1, gen_2, gen_3, gen_lbls_1, gen_lbls_2, gen_lbls_3 = self.load_gen_data()
 
-       
-
         train_data = np.concatenate((train_target,  gen_1, gen_2), axis=0)
         train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1, gen_lbls_2), axis=0)
 
@@ -76,11 +74,13 @@ class my_cnn_classifier():
         test_labels = lbls_test[:,0:6]
 
         pdb.set_trace()
+        
         del train_feats
         del train_target
         del valid_target
         del test_target
         del gen_1, gen_2, gen_3
+
         pdb.set_trace()
         # Find the unique numbers from the train labels  
         print('Total number of outputs : ', self.nClasses)
@@ -102,11 +102,13 @@ class my_cnn_classifier():
         for iteration in range(0,6):
             model.compile(optimizer=self.c_optim, loss='categorical_crossentropy', metrics=['accuracy'])
             history = model.fit(train_data, train_labels, batch_size=self.batch_size, epochs = self.epochs, verbose=1, validation_data=(train_data, train_labels))      
+            pdb.set_trace()
             c_loss = model.evaluate(test_data, lbls_test[:,0:6]) 
             y_pred = model.predict(test_data)
             total_loss.append(c_loss)      
-            cnf_matrix = self.plot_confusion_matrix(y_pred, test_lbls, iteration)
+            cnf_matrix = self.plot_confusion_matrix(y_pred, lbls_test[:,0:6], iteration)
             total_cm.append(cnf_matrix)
+            pdb.set_trace()
 
         store_obj("total_loss.pkl", total_loss)
         store_obj("total_cm.pkl", total_cm)
@@ -121,15 +123,6 @@ class my_cnn_classifier():
         plot_confusion_matrix(cnf_matrix, classes=class_names, title='Confusion matrix for generated specs')
         plt.savefig("confusionMatrix_genPlusReal_"+str(iteration)+".png")
         plt.close()
-        
-
-    # def run_ind_conformal_prefiction(self):
-
-    #     real_train_data, train_faces, train_lbls, real_test_data, test_faces, test_lbls, \
-    #         real_c_data, c_faces, c_lbls = load_real_samples_RAV()
-
-    #     inductive_conformal_prediction(train_faces, train_lbls, test_faces, test_lbls, c_faces, c_lbls, \
-    #         real_train_data, train_lbls, real_test_data, test_lbls)
 
 
 if __name__ == '__main__':
