@@ -22,7 +22,7 @@ class my_LSTM():
 
         self.no_of_layers = 32
 
-    def load_my_dataset(self, fold_index):
+    def load_my_dataset_lstm(self, fold_index):
 
         temp_path = '../../GANs_models/tmp_dtst/complete_'+str(fold_index)+'.pkl'
         my_3d_dict = load_obj(temp_path)
@@ -74,8 +74,9 @@ class my_LSTM():
 
         
         for fold_indx in range(1, 6):
-            train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset(fold_indx)
-            model.fit(train_feats, lbls_train, epochs=15, batch_size=64)
+            train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset_lstm(fold_indx)
+            #pdb.set_trace()
+            model.fit(train_feats, lbls_train, epochs=20, batch_size=64)
             #tensorboard.set_model(model)
             pred_feats_test = model.predict(test_feats)
             c_loss = model.evaluate(test_feats, lbls_test) 
@@ -89,7 +90,7 @@ class my_LSTM():
         pdb.set_trace()
         for fold_indx in range(1, 8):
 
-            train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset(fold_indx)
+            train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset_lstm(fold_indx)
             pred_feats_train = model.predict(train_feats)
             pred_feats_test= model.predict(test_feats)
             dataset_dict1 = {"feats_train":pred_feats_train,"lbls_train": lbls_train, "target_train": target_train}
