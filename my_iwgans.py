@@ -78,9 +78,9 @@ class WGANGP():
             
         self.target_mod = "audio"
         self.input_feats = "lstm"
-        self.learning_param = 0.001
+        self.learning_param = 0.0001
         self.no_of_trial = "first"
-        self.no_input_feats = 128
+        self.no_input_feats = 256
 
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = 5
@@ -91,7 +91,7 @@ class WGANGP():
             self.img_cols = 112
             self.channels = 3
             self.img_shape = (self.img_rows, self.img_cols, self.channels)
-            self.latent_dim = 134
+            self.latent_dim = 294
 
             # Build the generator and critic
             self.generator = build_generator(self.latent_dim, self.channels)
@@ -220,7 +220,6 @@ class WGANGP():
         else:
             train_feats, valid_feats, test_feats, train_target, valid_target, test_target, lbls_train, lbls_valid, lbls_test = lstm_data(self.target_mod, 1, self.no_input_feats)
 
-        pdb.set_trace()
         file_name = self.target_mod
         lbls_train = lbls_train[:,0:6]
       
@@ -277,9 +276,9 @@ class WGANGP():
                 batch_lbls = lbls_train[idx]
                 feats = train_feats[idx]
                 # Sample generator input
-                noise = np.random.normal(0, 1, (batch_size, 16))
+                noise = np.random.normal(0, 1, (batch_size, 32))
             
-                conditional_vector = np.concatenate([feats, batch_lbls], axis = 1)
+                conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, conditional_vector],[valid, fake, dummy, batch_lbls])
             
@@ -313,8 +312,8 @@ class WGANGP():
         r, c = 5, 5
         #noise = np.random.normal(0, 1, (r * c, self.latent_dim- 6))
         #pdb.set_trace()
-        noise = np.random.normal(0, 1, (batch_size, 16))
-        conditional_vector = np.concatenate([feats, batch_lbls], axis = 1)
+        noise = np.random.normal(0, 1, (batch_size, 32))
+        conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
         #conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
         gen_imgs = self.generator.predict(conditional_vector)
         store_image_maps(gen_imgs, "../../GANs_assets/generated_imgs/wgans/"+self.input_feats+"_noise_lbls_" + file_name +"_new_img_%d.png" % epoch)     
@@ -331,7 +330,7 @@ class WGANGP():
 
         self.generator.load_weights(weight_name)        
         
-        noise = np.random.normal(0, 1, (train_feats.shape[0], 16))
+        noise = np.random.normal(0, 1, (train_feats.shape[0], 32))
         noise = np.concatenate([train_feats, noise, lbls_train[:,0:6]], axis = 1) #noise = face_imgs
         gen_train = self.generator.predict([noise])
 

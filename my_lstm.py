@@ -21,7 +21,7 @@ class my_LSTM():
 
     def __init__(self):
 
-        self.no_of_layers = 128
+        self.no_of_layers = 256
 
     def load_my_dataset_lstm(self, fold_index):
 

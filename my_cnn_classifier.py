@@ -67,14 +67,11 @@ class my_cnn_classifier():
 
         gen_1, gen_2, gen_3, gen_lbls_1, gen_lbls_2, gen_lbls_3 = self.load_gen_data()
 
-        #train_data = np.concatenate((train_target,  gen_1, gen_2), axis=0)
-        #train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1, gen_lbls_2), axis=0)
+        train_data = np.concatenate((train_target,  gen_1, gen_2), axis=0)
+        train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1, gen_lbls_2), axis=0)
 
         test_data = test_target 
         test_labels = lbls_test[:,0:6]
-
-        train_data = train_target
-        train_labels = lbls_train[:150000,0:6]
         
         del train_feats
         del train_target
@@ -82,7 +79,7 @@ class my_cnn_classifier():
         del test_target
         del gen_1, gen_2, gen_3
 
-        pdb.set_trace()
+        #pdb.set_trace()
         # Find the unique numbers from the train labels  
         print('Total number of outputs : ', self.nClasses)
         # Find the shape of input images and create the variable input_shape
