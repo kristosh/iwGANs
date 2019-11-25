@@ -545,6 +545,7 @@ def lstm_model(no_of_layers):
     
     model = Sequential()
     model.add(LSTM(units = 256, input_shape = (10, 256), return_sequences = False, dropout = 0.5))
+    model.add(Dense(256, activation='relu'))
     model.add(Dense(no_of_layers, activation='sigmoid'))
     #model.add(Dense(64, activation='sigmoid'))
     model.add(Dense(6, activation='sigmoid'))

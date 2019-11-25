@@ -78,9 +78,9 @@ class WGANGP():
             
         self.target_mod = "audio"
         self.input_feats = "lstm"
-        self.learning_param = 0.0001
+        self.learning_param = 0.001
         self.no_of_trial = "first"
-        self.no_input_feats = 256
+        self.no_input_feats = 64
 
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = 5
@@ -91,7 +91,7 @@ class WGANGP():
             self.img_cols = 112
             self.channels = 3
             self.img_shape = (self.img_rows, self.img_cols, self.channels)
-            self.latent_dim = 294
+            self.latent_dim = 102
 
             # Build the generator and critic
             self.generator = build_generator(self.latent_dim, self.channels)

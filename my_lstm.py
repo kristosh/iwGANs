@@ -21,7 +21,7 @@ class my_LSTM():
 
     def __init__(self):
 
-        self.no_of_layers = 256
+        self.no_of_layers = 64
 
     def load_my_dataset_lstm(self, fold_index):
 
@@ -69,13 +69,14 @@ class my_LSTM():
         #     pred_feats_test = model.predict(test_feats)
         #     c_loss = model.evaluate(test_feats, lbls_test) 
         #     print (c_loss)
+        
 
-
+        # pdb.set_trace()
+        
         # model.save_weights("../../GANs_models/lstm_weights_"+str(self.no_of_layers))
         model.load_weights("../../GANs_models/lstm_weights_"+str(self.no_of_layers))
-        model.pop()
 
-        pdb.set_trace()
+        model.pop()
         for fold_indx in range(1, 8):
 
             train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset_lstm(fold_indx)
