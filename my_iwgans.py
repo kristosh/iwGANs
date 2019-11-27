@@ -78,8 +78,8 @@ class WGANGP():
             
         self.target_mod = "audio"
         self.input_feats = "lstm"
-        self.learning_param = 0.001
-        self.no_of_trial = "first"
+        self.learning_param = 0.00001
+        self.no_of_trial = "second"
         self.no_input_feats = 64
 
         # Following parameter and optimizer set as recommended in paper
@@ -150,7 +150,7 @@ class WGANGP():
                                               'categorical_crossentropy'],
                                         optimizer=optimizer,
                                         metrics=['accuracy'],
-                                        loss_weights=[1, 1, 5, 1])
+                                        loss_weights=[1, 1, 5, 10])
         #-------------------------------
         # Construct Computational Graph
         #         for Generator
@@ -261,10 +261,14 @@ class WGANGP():
         with open(model_name, "w") as yaml_file:
             yaml_file.write(model_yaml_cr)
 
+
+        # self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
+        # pdb.set_trace()
+
         for epoch in range(epochs):
 
             if epoch == 255000:
-                self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test)
+                self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
 
             for _ in range(self.n_critic):
                 # ---------------------
@@ -319,11 +323,12 @@ class WGANGP():
         store_image_maps(gen_imgs, "../../GANs_assets/generated_imgs/wgans/"+self.input_feats+"_noise_lbls_" + file_name +"_new_img_%d.png" % epoch)     
 
 
-    def gen_data_iwGANs(self, train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test): 
+    def gen_data_iwGANs(self, train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name): 
 
         weight_name = "../../GANs_models/" \
                             +self.input_feats \
-                            +str(self.learning_param) \
+                            +"_"+str(self.latent_dim) \
+                            +"_"+str(self.learning_param) \
                             +"_"+self.no_of_trial \
                             +"_gen_noise_feats_" \
                             + file_name+"_"

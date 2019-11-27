@@ -518,9 +518,9 @@ def build_critic(img_shape):
     model.add(BatchNormalization(momentum=0.8))
     model.add(LeakyReLU(alpha=0.2))
 
-    model.add(Conv2D(128, kernel_size=3, strides=1, padding="same"))
-    model.add(BatchNormalization(momentum=0.8))
-    model.add(LeakyReLU(alpha=0.2))
+    # model.add(Conv2D(128, kernel_size=3, strides=1, padding="same"))
+    # model.add(BatchNormalization(momentum=0.8))
+    # model.add(LeakyReLU(alpha=0.2))
 
     # model.add(Conv2D(256, kernel_size=3, strides=1, padding="same"))
     # model.add(BatchNormalization(momentum=0.8))
