@@ -6,7 +6,7 @@ from __future__ import print_function, division
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 from keras.datasets import mnist
 from keras.layers.merge import _Merge
@@ -77,13 +77,13 @@ class WGANGP():
     def __init__(self):
             
         self.target_mod = "audio"
-        self.input_feats = "lstm"
-        self.learning_param = 0.00001
+        self.input_feats = "3dCNN"
+        self.learning_param = 0.0001
         self.no_of_trial = "second"
         self.no_input_feats = 64
 
         # Following parameter and optimizer set as recommended in paper
-        self.n_critic = 5
+        self.n_critic = 10
         optimizer = RMSprop(lr=self.learning_param)
         
         if self.target_mod == "audio":
@@ -150,7 +150,7 @@ class WGANGP():
                                               'categorical_crossentropy'],
                                         optimizer=optimizer,
                                         metrics=['accuracy'],
-                                        loss_weights=[1, 1, 5, 10])
+                                        loss_weights=[1, 1, 5, 1])
         #-------------------------------
         # Construct Computational Graph
         #         for Generator
@@ -262,8 +262,8 @@ class WGANGP():
             yaml_file.write(model_yaml_cr)
 
 
-        # self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
-        # pdb.set_trace()
+        self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
+        pdb.set_trace()
 
         for epoch in range(epochs):
 
