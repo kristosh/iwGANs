@@ -262,8 +262,8 @@ class WGANGP():
             yaml_file.write(model_yaml_cr)
 
 
-        self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
-        pdb.set_trace()
+        # self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
+        # pdb.set_trace()
 
         for epoch in range(epochs):
 
@@ -286,7 +286,6 @@ class WGANGP():
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, conditional_vector],[valid, fake, dummy, batch_lbls])
             
-
             # ---------------------
             #  Train Generator
             # ---------------------
