@@ -286,21 +286,22 @@ def load_3d_dataset(target):
 
     if target == "audio":
 
-        data = load_obj("../../GANs_cnn/models/complete.pkl") 
+        data = load_obj("../../GANs_cnn/models/complete_3d.pkl") 
+        #data = load_obj("../../GANs_cnn/models/complete.pkl") 
 
         train_feats= data["face_train"][:350000]
         train_target = data["specs_train"][:350000]
         lbls_train = data["train_lbls"][:350000]
         train_target = (train_target.astype(np.float32) - 127.5) / 127.5
 
-        valid_feats = data["face_train"][450000:]
-        valid_target = data["specs_train"][450000:]
-        lbls_valid = data["train_lbls"][450000:]
+        valid_feats = data["face_train"][390000:450000]
+        valid_target = data["specs_train"][390000:450000]
+        lbls_valid = data["train_lbls"][390000:450000]
         valid_target = (valid_target.astype(np.float32) - 127.5) / 127.5
 
-        test_feats = data["face_test"][110000:]
-        test_target = data["specs_test"][110000:]
-        lbls_test= data["test_lbls"][110000:]
+        test_feats = data["face_train"][500000:]
+        test_target = data["specs_train"][500000:]
+        lbls_test= data["train_lbls"][500000:]
         test_target = (test_target.astype(np.float32) - 127.5) / 127.5
         
         randomize = np.arange(len(train_feats))

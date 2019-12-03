@@ -42,6 +42,10 @@ class dacssGANs():
         self.g_optim = Adagrad(lr=0.00001)
         self.c_optim = Adagrad(lr=0.00001)
 
+        self.mean = 0
+        self.var = 0.1
+        self.sigma = var**0.5
+
         self.models_path = "../../GANs_models/old_models/"
 
 
@@ -68,6 +72,24 @@ class dacssGANs():
             model = Model(input=[inputs], output=[x_generator, x_discriminator, x_classifier])
 
         return model
+    
+
+    def augmented_noise(self, image_batch):
+
+        num, row, col, ch= image_batch.shape
+
+        gauss1 = np.random.normal(self.mean, self.sigma,(num, row, col, ch))
+        gauss1 = gauss1.reshape(num, row,col,ch)
+        gauss1 = 0.01*gauss1
+        gauss1 = gauss1 +np.amax(gauss1)
+        
+
+        gauss2 = np.random.normal(self.mean, self.sigma,(num, row, col, ch))
+        gauss2 = gauss2.reshape(num, row, col, ch)
+        gauss2 = 0.01*gauss2
+        gauss2 = gauss2 +np.amax(gauss2)
+
+        return gauss1, gauss2
 
 
     def combine_images(self, generated_images):
@@ -167,23 +189,10 @@ class dacssGANs():
                     generated_images = generator.predict([X_train[index * batch_size:(index + 1) * batch_size], label_batch])
                 else:
                     generated_images = generator.predict(noise)
-                
-                num, row,col,ch= image_batch.shape
-                mean = 0
-                var = 0.1
-                sigma = var**0.5
 
-                gauss1 = np.random.normal(mean,sigma,(num, row,col,ch))
-                gauss1 = gauss1.reshape(num, row,col,ch)
-                gauss1 = 0.01*gauss1
-                gauss1 = gauss1 +np.amax(gauss1)
+                # Create a function for it.
+                gauss1, gauss2 = self.augmented_noise(image_batch)
                 image_batch = image_batch + gauss1
-
-                gauss2 = np.random.normal(mean,sigma,(num, row,col,ch))
-                gauss2 = gauss2.reshape(num, row,col,ch)
-                gauss2 = 0.01*gauss2
-                gauss2 = gauss2 +np.amax(gauss2)
-                
                 generated_images = generated_images +gauss2
 
                 if index % 200 == 0:       

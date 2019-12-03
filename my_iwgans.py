@@ -79,7 +79,7 @@ class WGANGP():
         self.target_mod = "audio"
         self.input_feats = "3dCNN"
         self.learning_param = 0.0001
-        self.no_of_trial = "second"
+        self.no_of_trial = "third"
         self.no_input_feats = 64
 
         # Following parameter and optimizer set as recommended in paper
@@ -222,7 +222,6 @@ class WGANGP():
 
         file_name = self.target_mod
         lbls_train = lbls_train[:,0:6]
-      
         # Adversarial ground truths
         valid = -np.ones((batch_size, 1))
         fake =  np.ones((batch_size, 1))
