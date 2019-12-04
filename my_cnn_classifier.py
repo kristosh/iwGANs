@@ -97,20 +97,20 @@ class my_cnn_classifier():
         total_cm = []
         pdb.set_trace()
         
-        for iteration in range(0,6):
+        for iteration in range(0,4):
             model.compile(optimizer=self.c_optim, loss='categorical_crossentropy', metrics=['accuracy'])
             history = model.fit(train_data, train_labels, batch_size=self.batch_size, epochs = self.epochs, verbose=1, validation_data=(train_data, train_labels))      
             
             c_loss = model.evaluate(test_data, lbls_test[:,0:6]) 
             print (c_loss)
-            # y_pred = model.predict(test_data)
-            # total_loss.append(c_loss)      
-            # cnf_matrix = self.plot_confusion_matrix(y_pred, lbls_test[:,0:6], iteration)
-            # total_cm.append(cnf_matrix)
+            y_pred = model.predict(test_data)
+            total_loss.append(c_loss)      
+            cnf_matrix = self.plot_confusion_matrix(y_pred, lbls_test[:,0:6], iteration)
+            total_cm.append(cnf_matrix)
             # pdb.set_trace()
 
-        # store_obj("total_loss.pkl", total_loss)
-        # store_obj("total_cm.pkl", total_cm)
+        store_obj("total_loss.pkl", total_loss)
+        store_obj("total_cm.pkl", total_cm)
 
 
     def plot_confusion_matrix(self, y_pred, test_labels, iteration):

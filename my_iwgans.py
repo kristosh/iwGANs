@@ -261,8 +261,8 @@ class WGANGP():
             yaml_file.write(model_yaml_cr)
 
 
-        # self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
-        # pdb.set_trace()
+        self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
+        pdb.set_trace()
 
         for epoch in range(epochs):
 
