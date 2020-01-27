@@ -6,7 +6,7 @@ from __future__ import print_function, division
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 from keras.datasets import mnist
 from keras.layers.merge import _Merge
@@ -77,13 +77,14 @@ class WGANGP():
     def __init__(self):
             
         self.target_mod = "audio"
-        self.input_feats = "3dCNN"
+        self.input_feats = "prime"
         self.learning_param = 0.0001
-        self.no_of_trial = "third"
+        self.no_of_trial = "sixth"
         self.no_input_feats = 64
 
+        self.db_path = "../../GANs_models/tmp_dtst/"
         # Following parameter and optimizer set as recommended in paper
-        self.n_critic = 10
+        self.n_critic = 15
         optimizer = RMSprop(lr=self.learning_param)
         
         if self.target_mod == "audio":
@@ -216,9 +217,11 @@ class WGANGP():
         # print(my_model.summary())
 
         if self.input_feats == "3dCNN":
-            (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) = load_3d_dataset(self.target_mod)
+            (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
+                = load_3d_dataset(self.target_mod)
         else:
-            train_feats, valid_feats, test_feats, train_target, valid_target, test_target, lbls_train, lbls_valid, lbls_test = lstm_data(self.target_mod, 1, self.no_input_feats)
+            train_feats, valid_feats, test_feats, train_target, valid_target, test_target, lbls_train, lbls_valid, lbls_test \
+                = temporal_feats(self.target_mod, 1, self.no_input_feats, self.input_feats, self.db_path)
 
         file_name = self.target_mod
         lbls_train = lbls_train[:,0:6]
@@ -227,9 +230,8 @@ class WGANGP():
         fake =  np.ones((batch_size, 1))
         dummy = np.zeros((batch_size, 1)) # Dummy gt for gradient penalty
 
-
         #self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test) 
-        #pdb.set_trace()
+        
         del valid_target
         del test_target
         # Create the TensorBoard callback,
@@ -260,10 +262,10 @@ class WGANGP():
         with open(model_name, "w") as yaml_file:
             yaml_file.write(model_yaml_cr)
 
+        #self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
+        #pdb.set_trace()
 
-        self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
-        pdb.set_trace()
-
+        my_loss = []
         for epoch in range(epochs):
 
             if epoch == 255000:
@@ -284,7 +286,7 @@ class WGANGP():
                 conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, conditional_vector],[valid, fake, dummy, batch_lbls])
-            
+                my_loss.append(d_loss)
             # ---------------------
             #  Train Generator
             # ---------------------
@@ -309,6 +311,15 @@ class WGANGP():
 
                 self.generator.save_weights(weight_name) 
 
+        
+        weight_name = "../../GANs_models/" \
+                            +self.input_feats \
+                            +"_"+str(self.latent_dim) \
+                            +"_"+str(self.learning_param) \
+                            +"_"+self.no_of_trial \
+                            +"_gen_noise_feats_" \
+                            + file_name+"_loss.pkl"
+        store_obj(weight_name, my_loss)
 
     def sample_images(self, epoch, batch_lbls, feats, batch_size, file_name):
         r, c = 5, 5
@@ -342,11 +353,16 @@ class WGANGP():
             gen_data = {"gen_train": gen_train[index:(75000+ 75000*index)], 
                         "lbls_train": lbls_train[index:(75000+ 75000*index)]}
 
-            stored_name = "../../GANs_models/"+self.input_feats+"_gen_audio_face_feat_"+str(index)+".pkl"
+            stored_name = "../../GANs_models/" \
+                +self.input_feats \
+                +"_gen_audio_face_feat_" \
+                +str(index) \
+                +".pkl"
+
             store_obj(stored_name, gen_data)
             gen_data = None
             
-            pdb.set_trace() 
+            
 
 
 if __name__ == '__main__':

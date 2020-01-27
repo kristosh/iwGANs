@@ -10,7 +10,7 @@ from keras.layers import Input, merge, Convolution2D, MaxPooling2D, UpSampling2D
 from keras.layers import LeakyReLU
 from keras.layers import LSTM
 
-from skimage.transform import resize
+#from skimage.transform import resize
 from normalization import BatchNormGAN
 #from keras import backend as K
 
@@ -545,7 +545,7 @@ def lstm_model(no_of_layers):
     
     model = Sequential()
     model.add(LSTM(units = 256, input_shape = (10, 256), return_sequences = False, dropout = 0.5))
-    model.add(Dense(256, activation='relu'))
+    model.add(Dense(256, activation='sigmoid'))
     model.add(Dense(no_of_layers, activation='sigmoid'))
     #model.add(Dense(64, activation='sigmoid'))
     model.add(Dense(6, activation='sigmoid'))

@@ -23,11 +23,13 @@ from confusion_matrix import plot_confusion_matrix
 from keras.utils import to_categorical
 
 from keras import backend as K
-K.set_image_dim_ordering('th')
+
+K.common.set_image_dim_ordering('th')
+
 
 from data_handling import *
 from keras_models import *
-
+import matplotlib.pyplot as plt
 
 from data_handling import *
 
@@ -43,13 +45,15 @@ class my_cnn_classifier():
         self.c_optim = RMSprop(lr=0.0001, decay=1e-6)
         self.epochs = 15
 
+        self.type_of_features = "prime"
 
-    def load_gen_data(self):
+
+    def load_gen_data(self, type_of_feats):
 
         data_list = []
         lbls_list = []
         for index in range(1, 4):      
-            dict_ = load_obj("../../GANs_models/3dCNN_gen_audio_face_feat_"+str(index)+".pkl")            
+            dict_ = load_obj("../../GANs_models/"+type_of_feats+"_gen_audio_face_feat_"+str(index)+".pkl")            
             data = dict_["gen_train"] 
             lbls_list.append(dict_["lbls_train"])       
             data_list.append(data.transpose(0, 3, 1, 2))
@@ -65,11 +69,16 @@ class my_cnn_classifier():
         train_target = train_target.transpose(0, 3, 1, 2)[:150000]
         test_target = test_target.transpose(0, 3, 1, 2)
 
-        gen_1, gen_2, gen_3, gen_lbls_1, gen_lbls_2, gen_lbls_3 = self.load_gen_data()
+        gen_1, gen_2, gen_3, gen_lbls_1, gen_lbls_2, gen_lbls_3 = self.load_gen_data(self.type_of_features)
+        
+        #pdb.set_trace()
 
-        train_data = np.concatenate((train_target,  gen_1, gen_2), axis=0)
-        train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1, gen_lbls_2), axis=0)
-
+        train_data = np.concatenate((train_target,  gen_1), axis=0)
+        train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1), axis=0)
+        
+        #train_data = train_target
+        #train_labels = lbls_train[:150000,0:6]
+        
         test_data = test_target 
         test_labels = lbls_test[:,0:6]
         
@@ -107,7 +116,7 @@ class my_cnn_classifier():
             total_loss.append(c_loss)      
             cnf_matrix = self.plot_confusion_matrix(y_pred, lbls_test[:,0:6], iteration)
             total_cm.append(cnf_matrix)
-            # pdb.set_trace()
+            pdb.set_trace()
 
         store_obj("total_loss.pkl", total_loss)
         store_obj("total_cm.pkl", total_cm)
@@ -120,7 +129,7 @@ class my_cnn_classifier():
         cnf_matrix = confusion_matrix(test_labels_, ret)   
         class_names = ["hap", "sad", "ang", "fea", "dis", "neu"]
         plot_confusion_matrix(cnf_matrix, classes=class_names, title='Confusion matrix for generated specs')
-        plt.savefig("confusionMatrix_genPlusReal_"+str(iteration)+".png")
+        #plt.savefig("confusionMatrix_genPlusReal_"+str(iteration)+".png")
         plt.close()
 
 

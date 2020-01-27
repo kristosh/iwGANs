@@ -61,17 +61,17 @@ class my_LSTM():
         model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
         
-        # for fold_indx in range(1, 6):
-        #     train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset_lstm(fold_indx)
-        #     #pdb.set_trace()
-        #     model.fit(train_feats, lbls_train, epochs=20, batch_size=64)
-        #     #tensorboard.set_model(model)
-        #     pred_feats_test = model.predict(test_feats)
-        #     c_loss = model.evaluate(test_feats, lbls_test) 
-        #     print (c_loss)
+        for fold_indx in range(1, 6):
+             train_feats, lbls_train, target_train, test_feats, lbls_test, target_test = self.load_my_dataset_lstm(fold_indx)
+             #pdb.set_trace()
+             model.fit(train_feats, lbls_train, epochs=20, batch_size=64)
+             #tensorboard.set_model(model)
+             pred_feats_test = model.predict(test_feats)
+             c_loss = model.evaluate(test_feats, lbls_test) 
+             print (c_loss)
         
 
-        # pdb.set_trace()
+        pdb.set_trace()
         
         # model.save_weights("../../GANs_models/lstm_weights_"+str(self.no_of_layers))
         model.load_weights("../../GANs_models/lstm_weights_"+str(self.no_of_layers))
