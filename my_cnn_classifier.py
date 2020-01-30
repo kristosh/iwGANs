@@ -4,7 +4,7 @@ import os
 def cls(): os.system('clear')
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import numpy as np
 import matplotlib
@@ -73,11 +73,11 @@ class my_cnn_classifier():
         
         #pdb.set_trace()
 
-        train_data = np.concatenate((train_target,  gen_1), axis=0)
-        train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1), axis=0)
+        #train_data = np.concatenate((train_target,  gen_1), axis=0)
+        #train_labels = np.concatenate((lbls_train[:150000,0:6], gen_lbls_1), axis=0)
         
-        #train_data = train_target
-        #train_labels = lbls_train[:150000,0:6]
+        train_data = train_target
+        train_labels = lbls_train[:150000,0:6]
         
         test_data = test_target 
         test_labels = lbls_test[:,0:6]
@@ -118,8 +118,8 @@ class my_cnn_classifier():
             total_cm.append(cnf_matrix)
             pdb.set_trace()
 
-        store_obj("total_loss.pkl", total_loss)
-        store_obj("total_cm.pkl", total_cm)
+        store_obj("total_loss_transfoermers.pkl", total_loss)
+        store_obj("total_cm_transormers.pkl", total_cm)
 
 
     def plot_confusion_matrix(self, y_pred, test_labels, iteration):

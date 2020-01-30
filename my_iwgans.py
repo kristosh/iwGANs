@@ -146,12 +146,12 @@ class WGANGP():
                             outputs=[valid, fake, validity_interpolated, aux1])
         
         self.critic_model.compile(loss=[self.wasserstein_loss,
-                                              self.wasserstein_loss,
-                                              partial_gp_loss,
-                                              'categorical_crossentropy'],
-                                        optimizer=optimizer,
-                                        metrics=['accuracy'],
-                                        loss_weights=[1, 1, 5, 1])
+                self.wasserstein_loss,
+                partial_gp_loss,
+                'categorical_crossentropy'],
+            optimizer=optimizer,
+            metrics=['accuracy'],
+            loss_weights=[1, 1, 5, 1])
         #-------------------------------
         # Construct Computational Graph
         #         for Generator
@@ -269,7 +269,13 @@ class WGANGP():
         for epoch in range(epochs):
 
             if epoch == 255000:
-                self.gen_data_iwGANs(train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name)
+                self.gen_data_iwGANs(train_feats, 
+                    valid_feats, 
+                    test_feats, 
+                    lbls_train, 
+                    lbls_valid, 
+                    lbls_test, 
+                    file_name)
 
             for _ in range(self.n_critic):
                 # ---------------------
@@ -301,24 +307,25 @@ class WGANGP():
             
             if epoch % sample_interval == 0:
                 self.sample_images(epoch, batch_lbls, feats, batch_size, file_name)
+
                 weight_name = "../../GANs_models/" \
-                            +self.input_feats \
-                            +"_"+str(self.latent_dim) \
-                            +"_"+str(self.learning_param) \
-                            +"_"+self.no_of_trial \
-                            +"_gen_noise_feats_" \
-                            + file_name+"_"
+                    +self.input_feats \
+                    +"_"+str(self.latent_dim) \
+                    +"_"+str(self.learning_param) \
+                    +"_"+self.no_of_trial \
+                    +"_gen_noise_feats_" \
+                    + file_name+"_"
 
                 self.generator.save_weights(weight_name) 
 
         
         weight_name = "../../GANs_models/" \
-                            +self.input_feats \
-                            +"_"+str(self.latent_dim) \
-                            +"_"+str(self.learning_param) \
-                            +"_"+self.no_of_trial \
-                            +"_gen_noise_feats_" \
-                            + file_name+"_loss.pkl"
+            +self.input_feats \
+            +"_"+str(self.latent_dim) \
+            +"_"+str(self.learning_param) \
+            +"_"+self.no_of_trial \
+            +"_gen_noise_feats_" \
+            + file_name+"_loss.pkl"
         store_obj(weight_name, my_loss)
 
     def sample_images(self, epoch, batch_lbls, feats, batch_size, file_name):
@@ -329,18 +336,23 @@ class WGANGP():
         conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
         #conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
         gen_imgs = self.generator.predict(conditional_vector)
-        store_image_maps(gen_imgs, "../../GANs_assets/generated_imgs/wgans/"+self.input_feats+"_noise_lbls_" + file_name +"_new_img_%d.png" % epoch)     
+        # Finally store the images to the local path
+        store_image_maps(gen_imgs, 
+            "../../GANs_assets/generated_imgs/wgans/" \
+            +self.input_feats+"_noise_lbls_"  \
+            + file_name  \
+            +"_new_img_%d.png" % epoch)     
 
 
     def gen_data_iwGANs(self, train_feats, valid_feats, test_feats, lbls_train, lbls_valid, lbls_test, file_name): 
 
         weight_name = "../../GANs_models/" \
-                            +self.input_feats \
-                            +"_"+str(self.latent_dim) \
-                            +"_"+str(self.learning_param) \
-                            +"_"+self.no_of_trial \
-                            +"_gen_noise_feats_" \
-                            + file_name+"_"
+            +self.input_feats \
+            +"_"+str(self.latent_dim) \
+            +"_"+str(self.learning_param) \
+            +"_"+self.no_of_trial \
+            +"_gen_noise_feats_" \
+            + file_name+"_"
 
         self.generator.load_weights(weight_name)        
         
@@ -351,7 +363,7 @@ class WGANGP():
         for index in range(0, 5):
     
             gen_data = {"gen_train": gen_train[index:(75000+ 75000*index)], 
-                        "lbls_train": lbls_train[index:(75000+ 75000*index)]}
+                "lbls_train": lbls_train[index:(75000+ 75000*index)]}
 
             stored_name = "../../GANs_models/" \
                 +self.input_feats \
@@ -360,9 +372,7 @@ class WGANGP():
                 +".pkl"
 
             store_obj(stored_name, gen_data)
-            gen_data = None
-            
-            
+            gen_data = None        
 
 
 if __name__ == '__main__':
