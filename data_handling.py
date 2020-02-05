@@ -253,6 +253,7 @@ def crossValidFiles(filename):
 
     return face, audio, lbls
 
+
 def temporal_feats(target, 
         fold_indx, 
         size_of_feats, 
@@ -260,49 +261,50 @@ def temporal_feats(target,
         db_path):
 
 
-    data = load_obj(db_path+feats_type+"_"+str(size_of_feats)+"_"+str(fold_indx)+".pkl")
+    _dt_ = load_obj(db_path+
+        feats_type+"_"+
+        str(size_of_feats)+"_"+
+        str(fold_indx)+
+        ".pkl")
 
-    train_feats1= data["feats_train"]
-    train_target1 = data["target_train"]
-    lbls_train1 = data["lbls_train"]
+    train_feats= _dt_["feats_train"]
+    train_target = _dt_["target_train"]
+    lbls_train = _dt_["lbls_train"]
 
-    data = load_obj(db_path+feats_type+"_"+str(size_of_feats)+"_"+str(fold_indx+1)+".pkl")
 
-    train_feats2= data["feats_train"]
-    train_target2 = data["target_train"]
-    lbls_train2 = data["lbls_train"]
+    _dt_ = load_obj(db_path+
+        feats_type+"_"+
+        str(size_of_feats)+"_"+
+        str(5)+
+        ".pkl")
 
-    data = load_obj(db_path+feats_type+"_"+str(size_of_feats)+"_"+str(fold_indx+2)+".pkl")
+    test_feats= _dt_["feats_train"]
+    test_target = _dt_["target_train"]
+    lbls_test = _dt_["lbls_train"]
 
-    train_feats3= data["feats_train"]
-    train_target3 = data["target_train"]
-    lbls_train3 = data["lbls_train"]
+    _dt_ = load_obj(db_path+
+        feats_type+"_"+
+        str(size_of_feats)+"_"+
+        str(6)+
+        ".pkl")
 
-    train_feats = np.concatenate((train_feats1, train_feats2, train_feats3), axis = 0)
-    train_target = np.concatenate((train_target1, train_target2, train_target3), axis =0)
-    lbls_train = np.concatenate((lbls_train1, lbls_train2, lbls_train3), axis = 0)
+    valid_feats= _dt_["feats_train"]
+    valid_target = _dt_["target_train"]
+    lbls_valid = _dt_["lbls_train"]
 
-    data = load_obj(db_path+feats_type+"_"+str(size_of_feats)+"_"+str(fold_indx+3)+".pkl")
+    _dct_ = {"train_feats": train_feats, 
+             "valid_feats": valid_feats, 
+             "test_feats": test_feats,
+             "train_target": train_target, 
+             "valid_target": valid_target, 
+             "test_target": test_target,
+             "lbls_train": lbls_train, 
+             "lbls_valid": lbls_valid, 
+             "lbls_test": lbls_test,
+             }
 
-    test_feats= data["feats_train"]
-    test_target = data["target_train"]
-    lbls_test = data["lbls_train"]
+    return _dct_
 
-    data = load_obj(db_path+feats_type+"_"+str(size_of_feats)+"_"+str(fold_indx+4)+".pkl")
-
-    valid_feats= data["feats_train"]
-    valid_target = data["target_train"]
-    lbls_valid = data["lbls_train"]
-
-    return train_feats, \
-        valid_feats, \
-        test_feats,\
-        train_target,\
-        valid_target,\
-        test_target,\
-        lbls_train,\
-        lbls_valid,\
-        lbls_test
 
 def load_3d_dataset(target):
 
@@ -414,9 +416,9 @@ def generated_data_dacsGANs(X_train,
     generated_images1 = generator.predict([noise_train])
     
     gen_data_dictionary = {"gen_train": generated_images1, 
-                           "gen_train_lbls": LABEL_train, 
-                           "gen_test": generated_test, 
-                           "gen_test_lbls": LABEL_test}
+        "gen_train_lbls": LABEL_train, 
+        "gen_test": generated_test, 
+        "gen_test_lbls": LABEL_test}
     store_obj("temp_files/gen_data_.pkl", gen_data_dictionary)
 
 
@@ -447,13 +449,13 @@ def _generated_data_wgans_(self,
         #self.store_image_maps(generated_train[0:100,:,:,:], file_name)
 
         gen_data_dictionary = {"gen_train": generated_train,
-                               "real_train_face": face_train,
-                               "real_train_audio": audio_train,
-                               "gen_train_lbls": lbls_train,
-                               "real_test_audio": audio_test,
-                               "real_test_face": face_test,
-                               "gen_test": generated_test, 
-                               "gen_test_lbls": lbls_test}
+                "real_train_face": face_train,
+                "real_train_audio": audio_train,
+                "gen_train_lbls": lbls_train,
+                "real_test_audio": audio_test,
+                "real_test_face": face_test,
+                "gen_test": generated_test, 
+                "gen_test_lbls": lbls_test}
 
         store_obj("temp_files/gen_data.pkl", gen_data_dictionary)
 
