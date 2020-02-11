@@ -7,8 +7,14 @@ from keras.optimizers import SGD, Adagrad
 import cv2
 import os
 
-source_modality = "face"
-target_modality = "audio"
+src_mod = "face"
+trg_mod = "audio"
+
+dacss_train_path = "../../GANs_cnn/models/_full_spec_new_train_112_28.pkl"
+dacss_test_path = "../../GANs_cnn/models/_full_spec_new_test_112_28.pkl"
+
+_indx_ = 200000
+_indx2_ = 215000
 
 
 def load_obj(filename):
@@ -77,7 +83,7 @@ def get_data_cp(datadir):
 
 def load_temp():
 
-    dict_cnn = load_obj("temp_files/cnn_dict_"+target_modality+".pkl")
+    dict_cnn = load_obj("temp_files/cnn_dict_"+trg_mod+".pkl")
     train = dict_cnn["training_data"]
     train_total_lbls = dict_cnn["training_lbls"]
     test = dict_cnn["test_gen"]
@@ -171,63 +177,92 @@ def gen_data_RAV():
     generated_train, train_face[1:5001, :, :, :], train_sp[1:5001, :, :, :], train_lbls[1:5001] = shuffle(generated_train, train_face[1:5001, :, :, :], train_sp[1:5001, :, :, :], train_lbls[1:5001])
     generated_test, test_face, test_sp, test_lbls = shuffle(generated_test, test_face, test_sp, test_lbls)
 
-    # file_name = "gen_img/test/ravdess7_test_real_images_"+source_modality+".png"
+    # file_name = "gen_img/test/ravdess7_test_real_images_"+src_mod+".png"
     # store_image_maps(test_face[0:90,:,:,:], file_name)
-    # file_name = "gen_img/test/ravdess7_test_real_images_"+target_modality+".png"
+    # file_name = "gen_img/test/ravdess7_test_real_images_"+trg_mod+".png"
     # store_image_maps(train_sp[0:90,:,:,:], file_name)
-    file_name = "gen_img/test/ravdess_noise_face_lbls_test_gen_images_"+target_modality+".png"
+    file_name = "gen_img/test/ravdess_noise_face_lbls_test_gen_images_"+trg_mod+".png"
     store_image_maps(generated_train[0:90,:,:,:], file_name)
     pdb.set_trace()
 
 def get_data(datadir):
 
-    # face_classifier = lenet_classifier_model_face(6)
-    # face_classifier.trainable = True
-    # c_optim = Adagrad(lr=0.00001)
-    # face_classifier.compile(loss="categorical_crossentropy", optimizer=c_optim, metrics=['accuracy'])
-    # face_classifier.load_weights('temp_files/classifier_28x28_face_new', True)
+    _dct_trn_ = load_obj(dacss_train_path)
 
-    dictionary_train = load_obj(datadir + "/models/_full_spec_new_train_112_28.pkl")
+    _src_trn_ = np.transpose(_dct_trn_[src_mod+"_data"] , (0, 3, 1, 2))
 
-    source_train = np.transpose(dictionary_train[source_modality+"_data"] , (0, 3, 1, 2))
+    _trg_trn_ = np.transpose(_dct_trn_[trg_mod+"_data"], (0, 3, 1, 2))
+    _lbls_trn_ = _dct_trn_[src_mod+"_lbls"]
 
-    target_train = np.transpose(dictionary_train[target_modality+"_data"], (0, 3, 1, 2))
-    lbls_train = dictionary_train[source_modality+"_lbls"]
+    _dct_tst_ = load_obj(dacss_test_path)
+    _src_tst_ = np.transpose(_dct_tst_[src_mod+"_data"], (0, 3, 1, 2))
+    _trg_tst_ = np.transpose(_dct_tst_[trg_mod+"_data"], (0, 3, 1, 2))
+    _lbls_tst_ = _dct_tst_[src_mod+"_lbls"]
 
-    dictionary_test = load_obj(datadir + "/models/_full_spec_new_test_112_28.pkl")
-    #dictionary_test = load_obj("../models/_full_spec_test_db_v4.pkl")
-    source_test = np.transpose(dictionary_test[source_modality+"_data"], (0, 3, 1, 2))
-    target_test = np.transpose(dictionary_test[target_modality+"_data"], (0, 3, 1, 2))
-    lbls_test = dictionary_test[source_modality+"_lbls"]
+    _lbls_tst_ = np.reshape(_lbls_tst_, [_lbls_tst_.shape[0], 1])
+    _lbls_trn_ = np.reshape(_lbls_trn_, [_lbls_trn_.shape[0], 1])
 
-    lbls_test = np.reshape(lbls_test, [lbls_test.shape[0], 1])
-    lbls_train = np.reshape(lbls_train, [lbls_train.shape[0], 1])
+    _src_trn_ = (_src_trn_.astype(np.float32) - 127.5)/127.5
+    _trg_trn_ = (_trg_trn_.astype(np.float32) - 127.5)/127.5
 
-    source_train = (source_train.astype(np.float32) - 127.5)/127.5
-    target_train = (target_train.astype(np.float32) - 127.5)/127.5
+    _src_tst_ = (_src_tst_.astype(np.float32) - 127.5)/127.5
+    _trg_tst_ = (_trg_tst_.astype(np.float32) - 127.5)/127.5
 
-    source_test = (source_test.astype(np.float32) - 127.5)/127.5
-    target_test = (target_test.astype(np.float32) - 127.5)/127.5
+    _src_vld_ = _src_trn_[_indx2_:]
+    _trg_vld_ = _trg_trn_[_indx2_:]
+    _lbls_vld_ = _lbls_trn_[_indx2_:]
 
-    randomize = np.arange(len(source_train))
-    np.random.shuffle(randomize)
-    source_train = source_train[randomize]
-    target_train = target_train[randomize]
-    lbls_train = lbls_train[randomize]
+    _src_trn_ = _src_trn_[:_indx_]
+    _trg_trn_ = _trg_trn_[:_indx_]
+    _lbls_trn_ = _lbls_trn_[:_indx_]
 
-    lbls_train = to_categorical(lbls_train)
-    lbls_train = lbls_train[:, 1:]
+    _rndz_ = np.arange(len(_src_trn_))
+    np.random.shuffle(_rndz_)
     
-    lbls_train[lbls_train == 0] = 0.01
-    lbls_train[lbls_train == 1] = 0.99
+    _src_trn_ = _src_trn_[_rndz_]
+    _trg_trn_ = _trg_trn_[_rndz_]
+    _lbls_trn_ = _lbls_trn_[_rndz_]
 
-    lbls_test = to_categorical(lbls_test)
-    lbls_test = lbls_test[:, 1:]
+    _rndz_ = np.arange(len(_src_vld_))
+    np.random.shuffle(_rndz_)
 
-    lbls_test[lbls_test == 0] = 0.01
-    lbls_test[lbls_test == 1] = 0.99
+    _src_vld_ = _src_vld_[_rndz_]
+    _trg_vld_ = _trg_vld_[_rndz_]
+    _lbls_vld_ = _lbls_vld_[_rndz_]
 
-    return source_train, target_train, lbls_train, source_test, target_test, lbls_test
+    _lbls_trn_ = to_categorical(_lbls_trn_)
+    _lbls_trn_ = _lbls_trn_[:, 1:]
+    
+    _lbls_trn_[_lbls_trn_ == 0] = 0.01
+    _lbls_trn_[_lbls_trn_ == 1] = 0.99
+
+    _lbls_vld_ = to_categorical(_lbls_vld_)
+    _lbls_vld_ = _lbls_vld_[:, 1:]
+    
+    _lbls_vld_[_lbls_vld_ == 0] = 0.01
+    _lbls_vld_[_lbls_vld_ == 1] = 0.99
+
+    _lbls_tst_ = to_categorical(_lbls_tst_)
+    _lbls_tst_ = _lbls_tst_[:, 1:]
+
+    _lbls_tst_[_lbls_tst_ == 0] = 0.01
+    _lbls_tst_[_lbls_tst_ == 1] = 0.99
+
+    del _dct_trn_, _dct_tst_
+
+    pdb.set_trace()
+
+    _dct_ = {"_src_trn_": _src_trn_,
+        "_trg_trn_": _trg_trn_,
+        "_lbls_trn_": _lbls_trn_,
+        "_src_vld_": _src_vld_,
+        "_trg_vld_": _trg_vld_,
+        "_lbls_vld_": _lbls_vld_,
+        "_src_tst_": _src_tst_,
+        "_trg_tst_": _trg_tst_,
+        "_lbls_tst_": _lbls_tst_}
+
+    return _dct_
 
 def crossValidFiles(filename):
     
@@ -260,7 +295,6 @@ def temporal_feats(target,
         feats_type, 
         db_path):
 
-
     _dt_ = load_obj(db_path+
         feats_type+"_"+
         str(size_of_feats)+"_"+
@@ -275,7 +309,7 @@ def temporal_feats(target,
     _dt_ = load_obj(db_path+
         feats_type+"_"+
         str(size_of_feats)+"_"+
-        str(5)+
+        str(2)+
         ".pkl")
 
     test_feats= _dt_["feats_train"]
@@ -285,7 +319,7 @@ def temporal_feats(target,
     _dt_ = load_obj(db_path+
         feats_type+"_"+
         str(size_of_feats)+"_"+
-        str(6)+
+        str(2)+
         ".pkl")
 
     valid_feats= _dt_["feats_train"]
@@ -433,12 +467,11 @@ def _generated_data_wgans_(self,
         generator = self.generator
         generator.load_weights('temp_files/iwgans_gen_audio_only_noise__')
         noise = np.random.normal(0, 1, (face_test.shape[0], 64))
-        #pdb.set_trace()
-        #generated_test = generator.predict([np.concatenate([ lbls_test, noise], axis = 1)])
-        generated_test = generator.predict(lbls_test)
+        generated_test = generator.predict([np.concatenate([ lbls_test, noise], axis = 1)])
+        #generated_test = generator.predict(lbls_test)
         noise = np.random.normal(0, 1, (face_train.shape[0], 64))
-        #generated_train = generator.predict([np.concatenate([lbls_train, noise], axis = 1)])
-        generated_train = generator.predict(lbls_train)
+        generated_train = generator.predict([np.concatenate([lbls_train, noise], axis = 1)])
+        #generated_train = generator.predict(lbls_train)
         generated_train = shuffle(generated_train)
 
 
@@ -691,8 +724,13 @@ def aggregate_files(input_file):
 
 def permutations():
 
-        sets = ['models/temp_models/complete_1.pkl', 'models/temp_models/complete_2.pkl', 'models/temp_models/complete_3.pkl', 'models/temp_models/complete_4.pkl',
-            'models/temp_models/complete_5.pkl', 'models/temp_models/complete_6.pkl', 'models/temp_models/complete_7.pkl']
+        sets = ['models/temp_models/complete_1.pkl', 
+            'models/temp_models/complete_2.pkl', 
+            'models/temp_models/complete_3.pkl', 
+            'models/temp_models/complete_4.pkl',
+            'models/temp_models/complete_5.pkl', 
+            'models/temp_models/complete_6.pkl', 
+            'models/temp_models/complete_7.pkl']
         
         for i in range(0,7):
                 

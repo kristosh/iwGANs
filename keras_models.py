@@ -66,7 +66,8 @@ def generator_model():
 
     global batch_size
     inputs = Input((in_ch, img_cols, img_rows)) 
-    input_conditional = Input(shape=(13,))
+    input_conditional = Input(shape=(106,))
+    
     e0 = BatchNormGAN()(inputs)
     e1 = Flatten()(e0)
     e2 = Concatenate()([e1, input_conditional])   
@@ -115,20 +116,20 @@ def discriminator_model():
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Convolution2D(512, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
-    model.add(Convolution2D(1024, 4, 4,border_mode='same'))
-    model.add(BatchNormGAN())
-    model.add(Convolution2D(512, 4, 4,border_mode='same'))
-    model.add(BatchNormGAN())
-    model.add(Convolution2D(512, 4, 4,border_mode='same'))
-    model.add(BatchNormGAN())
-    model.add(Convolution2D(512, 4, 4,border_mode='same'))
-    model.add(BatchNormGAN())
     model.add(Convolution2D(512, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
     model.add(Convolution2D(256, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
     model.add(Convolution2D(256, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
+    # model.add(Convolution2D(128, 4, 4,border_mode='same'))
+    # model.add(BatchNormGAN())
+    # model.add(Convolution2D(128, 4, 4,border_mode='same'))
+    # model.add(BatchNormGAN())
+    # model.add(Convolution2D(256, 4, 4,border_mode='same'))
+    # model.add(BatchNormGAN())
+    # model.add(Convolution2D(256, 4, 4,border_mode='same'))
+    # model.add(BatchNormGAN())
     model.add(LeakyReLU(alpha=0.1))
     model.add(Convolution2D(1, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
@@ -409,7 +410,6 @@ def build_generator_old(latent_dim):
 def build_generator_face(latent_dim, channels):
 
     model = Sequential()
-    #pdb.set_trace()
     model.add(Dense(128 * 7 * 7, activation="relu", input_shape=(None, latent_dim))) #input_dim
     model.add(Reshape((7, 7, 128)))
     model.add(UpSampling2D())
@@ -446,7 +446,6 @@ def build_generator_face(latent_dim, channels):
 def build_generator(latent_dim, channels):
 
     model = Sequential()
-    #pdb.set_trace()
     model.add(Dense(128 * 7 * 7, activation="relu", input_shape=(None, latent_dim))) #input_dim
     model.add(Reshape((7, 7, 128)))
     model.add(UpSampling2D())

@@ -233,13 +233,13 @@ class WGANGP():
         fake =  np.ones((batch_size, 1))
         dummy = np.zeros((batch_size, 1)) # Dummy gt for gradient penalty
 
-        self.gen_data_iwGANs(_dct_, file_name) 
+        # self.gen_data_iwGANs(_dct_, file_name) 
         
         try:
             del valid_target
             del test_target
         except Exception as e:
-            print("Temporal version)
+            print("Temporal version")
 
         # Create the TensorBoard callback,
         # which we will drive manually
@@ -269,13 +269,10 @@ class WGANGP():
         with open(model_name, "w") as yaml_file:
             yaml_file.write(model_yaml_cr)
 
-        #self.gen_data_iwGANs(_dct_, file_name)
-        #pdb.set_trace()
-
         my_loss = []
         for epoch in range(epochs):
 
-            if epoch == 255000:
+            if epoch == 50000:
                 self.gen_data_iwGANs(_dct_, file_name)
 
             for _ in range(self.n_critic):
@@ -307,7 +304,12 @@ class WGANGP():
             # If at save interval => save generated image samples
             
             if epoch % sample_interval == 0:
-                self.sample_images(epoch, batch_lbls, feats, batch_size, file_name)
+                self.sample_images(epoch, 
+                    batch_lbls, 
+                    feats, 
+                    batch_size, 
+                    imgs, 
+                    file_name)
 
                 weight_name = "../../GANs_models/" \
                     +self.input_feats \
@@ -330,20 +332,26 @@ class WGANGP():
 
 
     # Store generated images.
-    def sample_images(self, epoch, batch_lbls, feats, batch_size, file_name):
+    def sample_images(self, epoch, batch_lbls, feats, batch_size, imgs, file_name):
         r, c = 5, 5
         #noise = np.random.normal(0, 1, (r * c, self.latent_dim- 6))
-        #pdb.set_trace()
         noise = np.random.normal(0, 1, (batch_size, 32))
         conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
         #conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
         gen_imgs = self.generator.predict(conditional_vector)
         # Finally store the images to the local path
+        
         store_image_maps(gen_imgs, 
             "../../GANs_assets/generated_imgs/wgans/" \
             +self.input_feats+"_noise_lbls_"  \
             + file_name  \
             +"_new_img_%d.png" % epoch)     
+        
+        store_image_maps(imgs, 
+            "../../GANs_assets/generated_imgs/wgans/" \
+            +self.input_feats+"_noise_lbls_"  \
+            + file_name  \
+            +"_real_img_%d.png" % epoch)  
 
 
     # Generate new samples using the trained Generator.
@@ -359,24 +367,28 @@ class WGANGP():
 
         self.generator.load_weights(weight_name)        
         
-        noise = np.random.normal(0, 1, (_dct_["train_feats"].shape[0], 32))
-        noise = np.concatenate([_dct_["train_feats"], noise, _dct_["lbls_train"][:,0:6]], axis = 1)
+        noise = np.random.normal(0, 1, (_dct_["test_feats"].shape[0], 32))
+        
+        noise = np.concatenate([_dct_["test_feats"], 
+            noise, 
+            _dct_["lbls_test"][:,0:6]], 
+            axis = 1)
         
         gen_train = self.generator.predict([noise])
 
         for index in range(0, 5):
-    
-            gen_data = {"gen_train": gen_train[index:(75000+ 75000*index)], 
-                "lbls_train": _dct_["lbls_train"][index:(75000+ 75000*index)]}
+            
+            gen_data = {"gen_test": gen_train[75000*index:(75000+ 75000*index)], 
+                "lbls_test": _dct_["lbls_test"][75000*index:(75000+ 75000*index)]}
 
             stored_name = "../../GANs_models/" \
                 +self.input_feats \
-                +"_gen_audio_face_feat_" \
+                +"_gen_audio_face_test_feat_" \
                 +str(index) \
                 +".pkl"
 
             store_obj(stored_name, gen_data)
-            gen_data = None        
+            gen_data = None  
 
 
 if __name__ == '__main__':
