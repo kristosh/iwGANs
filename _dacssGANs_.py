@@ -4,7 +4,7 @@ import os, sys
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 import argparse
 import cv2
@@ -27,6 +27,7 @@ from keras_models import *
 
 
 class dacssGANs():
+
     def __init__(self):
         
         self.img_rows = 28
@@ -34,7 +35,7 @@ class dacssGANs():
         self.in_ch = 3
         self.batch_size = 64
         self.source_modality = "face"
-        self.target_modality = "audio"
+        self.mod = "audio"
         self.temporal = False
 
         self.images = 1
@@ -150,12 +151,11 @@ class dacssGANs():
 
         if self.temporal == True:
             (train_source, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
-                = load_3d_dataset(self.target_modality)
+                = load_3d_dataset(self.mod)
         else:
-            (train_source, train_target, lbls_train, test_source, test_target, lbls_test)\
-                = get_data('train')
+            _dct_ = get_data('train')
 
-        train_target = train_target.transpose(0, 3, 1, 2)
+        train_target = _dct_["_trg_trn_"].transpose(0, 3, 1, 2)
 
         discriminator = discriminator_model()
         
@@ -180,17 +180,22 @@ class dacssGANs():
         classifier.trainable = True
         
         classifier.compile(loss="categorical_crossentropy", optimizer=self.c_optim, metrics=['accuracy'])
-        classifier.load_weights(self.models_path+'classifier_28x112_'+target_modality)
+        classifier.load_weights(self.models_path+'classifier_28x112_'+self.mod)
 
-        for epoch in range(280):
+        for epoch in range(80):
             
+            if epoch == 40:
+                loss_name = "../../GANs_assets/training_GANs/"\
+                    +"source_noise_lbls_audio_dacssGANs_pkl"                
+                store_obj(loss_name, loss_total)
+
             print("Epoch is", epoch)
-            print("Number of batches", int(train_source.shape[0] / batch_size))
-            for index in range(int(train_source.shape[0] / batch_size)):
+            print("Number of batches", int(_dct_["_src_trn_"].shape[0] / batch_size))
+            for index in range(int(_dct_["_src_trn_"].shape[0] / batch_size)):
                 
-                source_image_batch = train_source[index * batch_size:(index + 1) * batch_size]
+                source_image_batch = _dct_["_src_trn_"][index * batch_size:(index + 1) * batch_size]
                 image_batch = train_target[index * batch_size:(index + 1) * batch_size]
-                label_batch = lbls_train[index * batch_size:(index + 1) * batch_size]  # replace with your data here
+                label_batch = _dct_["_lbls_trn_"][index * batch_size:(index + 1) * batch_size]  # replace with your data here
 
                 if self.temporal == False:
                     noise = np.random.normal(0, 1, (batch_size, 100))
@@ -209,14 +214,14 @@ class dacssGANs():
 
                 if index % 200 == 0:       
                     file_name = "../../GANs_assets/generated_imgs/"\
-                        +target_modality\
+                        +self.mod\
                         +"/generated"\
                         +str(epoch)+"_"\
                         +str(index)+".png"
 
                     self.store_image_maps(generated_images, file_name)               
                     file_name = "../../GANs_assets/generated_imgs/"\
-                        +target_modality+"/target_"\
+                        +self.mod+"/target_"\
                         +str(epoch)\
                         +"_"+str(index)\
                         +".png"
@@ -234,14 +239,16 @@ class dacssGANs():
                 discriminator.trainable = False
 
                 # Training C:
-                c_loss = classifier.evaluate(generated_images, label_batch)
+                #c_loss = classifier.evaluate(generated_images, label_batch)
+                c_loss = classifier.train_on_batch(generated_images, label_batch)
                 print("batch %d c_loss : %f acc : %f" % (index, c_loss[0], c_loss[1]))
 
                 classifier.trainable = False
                 # Train G:
+                #train_source[index * batch_size:(index + 1) * batch_size, :, :, :]
                 if self.temporal == False:
                     g_loss = discriminator_and_classifier_on_generator.train_on_batch(
-                        [train_source[index * batch_size:(index + 1) * batch_size, :, :, :], noise], 
+                        [source_image_batch, noise], 
                         [image_batch, np.ones((self.batch_size, 1, 64, 64)), label_batch])
                 else:
                     g_loss = discriminator_and_classifier_on_generator.train_on_batch(
@@ -259,13 +266,15 @@ class dacssGANs():
                     
                     generator.save_weights(self.models_path+
                         'gen_tmp_dacssGANs_'
-                        +target_modality, 
+                        +self.mod, 
                         True)
                     discriminator.save_weights(self.models_path+
                         'discr_tmp_dacssGANs_'
-                        +target_modality, 
+                        +self.mod, 
                         True)
         
+
+        pdb.set_trace()
         loss_name = "../../GANs_assets/training_GANs/"\
             +"source_noise_lbls_audio_dacssGANs_pkl"                
 
