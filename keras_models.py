@@ -62,11 +62,11 @@ def generator_model_temporal():
     model = Model([inputs], output=e14)
     return model
 
-def generator_model():
+def generator_model(cond_dim):
 
     global batch_size
     inputs = Input((in_ch, img_cols, img_rows)) 
-    input_conditional = Input(shape=(106,))
+    input_conditional = Input(shape=(cond_dim,))
     
     e0 = BatchNormGAN()(inputs)
     e1 = Flatten()(e0)

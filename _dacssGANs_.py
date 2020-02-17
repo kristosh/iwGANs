@@ -22,8 +22,14 @@ def cls(): os.system('clear')
 import matplotlib.image
 from skimage.transform import resize
 from normalization import BatchNormGAN
-from data_handling import *
+from data_handling import data_handle
 from keras_models import *
+import tensorflow as tf
+
+
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+sess = tf.Session(config= config)
 
 
 class dacssGANs():
@@ -33,9 +39,10 @@ class dacssGANs():
         self.img_rows = 28
         self.img_cols = 28
         self.in_ch = 3
-        self.batch_size = 64
+        self.batch_size = 32
         self.source_modality = "face"
         self.mod = "audio"
+        self.exp_tp = "without_lbls"
         self.temporal = False
 
         self.images = 1
@@ -48,9 +55,15 @@ class dacssGANs():
         self.sigma = self.var**0.5
 
         self.models_path = "../../GANs_models/old_models/"
+        self.loss_path =  "../../GANs_assets/training_GANs/"
+
+        self.hndl_obj = data_handle()
+
+        self.input_dim = 100
+        
 
 
-    def generator_containing_discriminator_and_classifier(self, 
+    def _G_with_D_and_Q_(self, 
             generator, 
             discriminator, 
             classifier, 
@@ -58,7 +71,7 @@ class dacssGANs():
         
         if temporal == False:
             inputs = Input((self.in_ch, self.img_cols, self.img_rows))
-            input_conditional = Input(shape=(106,))
+            input_conditional = Input(shape=(self.input_dim,))
             x_generator = generator([inputs, input_conditional])
         else: 
             inputs = Input(shape=(170,))
@@ -135,6 +148,7 @@ class dacssGANs():
 
 
     def discriminator_on_generator_loss(self, y_true,y_pred):
+        
         return K.mean(K.binary_crossentropy(K.flatten(y_pred), 
                 K.ones_like(K.flatten(y_pred))), 
                 axis=-1)
@@ -150,23 +164,20 @@ class dacssGANs():
         loss_total = []
 
         if self.temporal == True:
-            (train_source, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
-                = load_3d_dataset(self.mod)
+            _dct_ = self.hndl_obj.load_3d_dataset(self.mod)
         else:
-            _dct_ = get_data('train')
-
-        train_target = _dct_["_trg_trn_"].transpose(0, 3, 1, 2)
+            _dct_ = self.hndl_obj.get_data('train') 
 
         discriminator = discriminator_model()
         
         if self.temporal == False:
-            generator = generator_model()
+            generator = generator_model(self.input_dim)
         else:
             generator = generator_model_temporal()
 
         classifier = lenet_classifier_model(6)
 
-        discriminator_and_classifier_on_generator = self.generator_containing_discriminator_and_classifier(
+        discriminator_and_classifier_on_generator = self._G_with_D_and_Q_(
             generator, discriminator, classifier, self.temporal)
         
         generator.compile(loss=self.generator_l1_loss, optimizer=self.g_optim)
@@ -182,32 +193,51 @@ class dacssGANs():
         classifier.compile(loss="categorical_crossentropy", optimizer=self.c_optim, metrics=['accuracy'])
         classifier.load_weights(self.models_path+'classifier_28x112_'+self.mod)
 
-        for epoch in range(80):
+
+        generator.save_weights(self.models_path+
+            'gen_tmp_dacssGANs_'
+            +self.mod
+            +"_"
+            +self.exp_tp)
+
+        discriminator.save_weights(self.models_path
+            +'discr_tmp_dacssGANs_'
+            +self.mod 
+            +"_"
+            +self.exp_tp)
+
+
+        for epoch in range(300, 600):
             
             if epoch == 40:
-                loss_name = "../../GANs_assets/training_GANs/"\
-                    +"source_noise_lbls_audio_dacssGANs_pkl"                
-                store_obj(loss_name, loss_total)
+                loss_name = self.loss_path\
+                    +"training_loss_for_GANS_"\
+                    +self.mod\
+                    +"_"+self.exp_tp+"_"\
+                    + ".pkl"     
+                self.hndl_obj.store_obj(loss_name, loss_total)
 
             print("Epoch is", epoch)
             print("Number of batches", int(_dct_["_src_trn_"].shape[0] / batch_size))
             for index in range(int(_dct_["_src_trn_"].shape[0] / batch_size)):
                 
                 source_image_batch = _dct_["_src_trn_"][index * batch_size:(index + 1) * batch_size]
-                image_batch = train_target[index * batch_size:(index + 1) * batch_size]
+                image_batch = _dct_["_trg_trn_"][index * batch_size:(index + 1) * batch_size]
                 label_batch = _dct_["_lbls_trn_"][index * batch_size:(index + 1) * batch_size]  # replace with your data here
 
+                # self.store_image_maps(source_image_batch, "tempFaces.jpg") 
+                # self.store_image_maps(image_batch, "tempAudio.jpg") 
                 if self.temporal == False:
                     noise = np.random.normal(0, 1, (batch_size, 100))
-                    noise = np.concatenate([noise, label_batch], axis = 1)
+                    #noise = np.concatenate([noise, label_batch], axis = 1)
                     generated_images = generator.predict([source_image_batch, noise])
                 else:
                     noise = np.random.normal(0, 1, (batch_size, 100))
-                    noise = np.concatenate([noise, label_batch, source_image_batch], axis = 1)
+                    #noise = np.concatenate([noise, label_batch, source_image_batch], axis = 1)
                     generated_images = generator.predict(noise)
 
                 # Create a function for it.
-                image_batch = np.transpose(image_batch, (0, 2, 3, 1))
+                #image_batch = np.transpose(image_batch, (0, 2, 3, 1))
                 gauss1, gauss2 = self.augmented_noise(image_batch)
                 image_batch = image_batch + gauss1
                 generated_images = generated_images +gauss2
@@ -217,6 +247,7 @@ class dacssGANs():
                         +self.mod\
                         +"/generated"\
                         +str(epoch)+"_"\
+                        +"_"+self.exp_tp+"_"\
                         +str(index)+".png"
 
                     self.store_image_maps(generated_images, file_name)               
@@ -224,6 +255,7 @@ class dacssGANs():
                         +self.mod+"/target_"\
                         +str(epoch)\
                         +"_"+str(index)\
+                        +"_"+self.exp_tp+"_"\
                         +".png"
 
                     self.store_image_maps(image_batch, file_name)
@@ -245,7 +277,6 @@ class dacssGANs():
 
                 classifier.trainable = False
                 # Train G:
-                #train_source[index * batch_size:(index + 1) * batch_size, :, :, :]
                 if self.temporal == False:
                     g_loss = discriminator_and_classifier_on_generator.train_on_batch(
                         [source_image_batch, noise], 
@@ -266,19 +297,23 @@ class dacssGANs():
                     
                     generator.save_weights(self.models_path+
                         'gen_tmp_dacssGANs_'
-                        +self.mod, 
-                        True)
-                    discriminator.save_weights(self.models_path+
-                        'discr_tmp_dacssGANs_'
-                        +self.mod, 
-                        True)
-        
+                        +self.mod
+                        +"_"
+                        +self.exp_tp, True)
 
-        pdb.set_trace()
-        loss_name = "../../GANs_assets/training_GANs/"\
-            +"source_noise_lbls_audio_dacssGANs_pkl"                
+                    discriminator.save_weights(self.models_path
+                        +'discr_tmp_dacssGANs_'
+                        +self.mod 
+                        +"_"
+                        +self.exp_tp, True)
 
-        store_obj(loss_name, loss_total)
+        loss_name = self.loss_path\
+                    +"training_loss_for_GANS_"\
+                    +self.mod\
+                    +"_"+self.exp_tp+"_"\
+                    + ".pkl" 
+
+        self.hndl_obj.store_obj(loss_name, loss_total)
 
 
 if __name__ == '__main__':

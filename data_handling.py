@@ -8,23 +8,19 @@ import cv2
 import os
 
 
-def load_obj(filename):
-    with open(filename, "rb") as fp:  # Unpickling
-        return pickle.load(fp, encoding='bytes') 
-
-
-def store_obj(filename, obj):
-    with open(filename, "wb") as fp:  # Pickling
-        pickle.dump(obj, fp, protocol=4)
-
 def _norm_(image):
 
     return (image.astype(np.float32) - 127.5)/127.5
+
+def _trnse_(_arr_):
+
+    return np.transpose(_arr_ , (0, 3, 1, 2))
 
 
 class data_handle():
 
     def __init__(self):
+
         self.src_mod = "face"
         self.trg_mod = "audio"
 
@@ -33,7 +29,7 @@ class data_handle():
         self.db_3d = "../../GANs_cnn/models/complete.pkl"
         self.wgans_path = "../models/complete.pkl"
 
-        self._indx_ = 200000
+        self._indx_ = 180000
         self._indx2_= 215000
 
         self._lmt_1 = 350000
@@ -48,18 +44,27 @@ class data_handle():
         _my_arr_[_my_arr_ == 1] = 0.99
 
         return _my_arr_
+    
+    def load_obj(self, filename):
+        with open(filename, "rb") as fp:  # Unpickling
+            return pickle.load(fp, encoding='bytes') 
+
+
+    def store_obj(self, filename, obj):
+        with open(filename, "wb") as fp:  # Pickling
+            pickle.dump(obj, fp, protocol=4)
 
 
     def get_data(self, datadir):
 
-        _dct_trn_ = load_obj(self.dacss_train_path)
+        _dct_trn_ = self.load_obj(self.dacss_train_path)
 
         _src_trn_ = np.transpose(_dct_trn_[self.src_mod+"_data"] , (0, 3, 1, 2))
 
         _trg_trn_ = np.transpose(_dct_trn_[self.trg_mod+"_data"], (0, 3, 1, 2))
-        _lbls_trn_ = _dct_trn_[src_mod+"_lbls"]
+        _lbls_trn_ = _dct_trn_[self.src_mod+"_lbls"]
 
-        _dct_tst_ = load_obj(dacss_test_path)
+        _dct_tst_ = self.load_obj(self.dacss_test_path)
         _src_tst_ = np.transpose(_dct_tst_[self.src_mod+"_data"], (0, 3, 1, 2))
         _trg_tst_ = np.transpose(_dct_tst_[self.trg_mod+"_data"], (0, 3, 1, 2))
         _lbls_tst_ = _dct_tst_[self.src_mod+"_lbls"]
@@ -134,7 +139,7 @@ class data_handle():
             feats_type, 
             db_path):
 
-        _dt_ = load_obj(db_path+
+        _dt_ = self.load_obj(db_path+
             feats_type+"_"+
             str(size_of_feats)+"_"+
             str(fold_indx)+
@@ -145,7 +150,7 @@ class data_handle():
         lbls_train = _dt_["lbls_train"]
 
 
-        _dt_ = load_obj(db_path+
+        _dt_ = self.load_obj(db_path+
             feats_type+"_"+
             str(size_of_feats)+"_"+
             str(2)+
@@ -155,7 +160,7 @@ class data_handle():
         test_target = _dt_["target_train"]
         lbls_test = _dt_["lbls_train"]
 
-        _dt_ = load_obj(db_path+
+        _dt_ = self.load_obj(db_path+
             feats_type+"_"+
             str(size_of_feats)+"_"+
             str(2)+
@@ -183,7 +188,7 @@ class data_handle():
 
         if target == "audio":
             
-            _dt_ = load_obj(self.db_3d)
+            _dt_ = self.load_obj(self.db_3d)
 
            
             trn_fts= _dt_["face_train"][:self._lmt_1]
@@ -229,7 +234,7 @@ class data_handle():
         
         elif target == "face":
 
-            data = load_obj("models/extrAudioFeats64.pkl") 
+            data = self.load_obj("models/extrAudioFeats64.pkl") 
 
             trn_feats= data["trainFeats"]
             trn_tgt = data["face_train"]

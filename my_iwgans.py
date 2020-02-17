@@ -213,14 +213,17 @@ class WGANGP():
 
     def train(self, epochs, batch_size, sample_interval=50):
         
-        # my_model = self.load_model_from_yaml("../../GANs_models/"+self.input_feats+"_gen_noise_feats_generator_model.yaml")
+        my_model = self.load_model_from_yaml(
+            "../../GANs_models/"
+            +self.input_feats
+            +"_gen_noise_feats_generator_model.yaml")
+
         # print(my_model.summary())
 
         if self.input_feats == "3dCNN":
-            (train_feats, train_target, lbls_train, valid_feats, valid_target, lbls_valid, test_feats, test_target, lbls_test) \
-                = load_3d_dataset(self.target_mod)
+            _dct_ = load_3d_dataset(self.target_mod)
         else:
-           _dct_ = temporal_feats(self.target_mod, 1, 
+            _dct_ = temporal_feats(self.target_mod, 1, 
                 self.no_input_feats, 
                 self.input_feats, 
                 self.db_path)

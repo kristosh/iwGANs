@@ -4,7 +4,7 @@ import os
 def cls(): os.system('clear')
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 import numpy as np
 import matplotlib
@@ -45,7 +45,7 @@ class my_cnn_classifier():
         self.c_optim = RMSprop(lr=0.0001, decay=1e-6)
         self.epochs = 15
 
-        self.type_of_features = "prime"
+        self.type_of_features = "3dCNN"
 
         self.my_obj = data_handle()
 
@@ -85,7 +85,6 @@ class my_cnn_classifier():
         test_data = test_target 
         test_labels = _dct_["tst_lbls"]
 
-        pdb.set_trace()
         del _dct_
         del gen_1, gen_2
 
@@ -105,6 +104,8 @@ class my_cnn_classifier():
         total_loss = []
         total_cm = []
         
+        pdb.set_trace()
+
         for iteration in range(0,4):
             model.compile(optimizer=self.c_optim, loss='categorical_crossentropy', metrics=['accuracy'])
             history = model.fit(train_data, train_labels, batch_size=self.batch_size, epochs = self.epochs, verbose=1, validation_data=(train_data, train_labels))      
