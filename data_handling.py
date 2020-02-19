@@ -24,8 +24,12 @@ class data_handle():
         self.src_mod = "face"
         self.trg_mod = "audio"
 
-        self.dacss_train_path = "../../GANs_cnn/models/_full_spec_new_train_112_28.pkl"
-        self.dacss_test_path = "../../GANs_cnn/models/_full_spec_new_test_112_28.pkl"
+        self.cr_train_path = "../../GANs_cnn/models/_full_spec_new_train_112_28.pkl"
+        self.cr_test_path = "../../GANs_cnn/models/_full_spec_new_test_112_28.pkl"
+
+        self.rv_train_path = "../../GANs_cnn/models/ravdess/trnNseq/train_non_seq_rav_0.pkl"
+        self.rv_test_path = "../../GANs_cnn/models/ravdess/test_non_seq_rav.pkl"
+
         self.db_3d = "../../GANs_cnn/models/complete.pkl"
         self.wgans_path = "../models/complete.pkl"
 
@@ -53,39 +57,26 @@ class data_handle():
     def store_obj(self, filename, obj):
         with open(filename, "wb") as fp:  # Pickling
             pickle.dump(obj, fp, protocol=4)
+    
 
+    def get_data(self, datadir, path,  db):
+        
+        _dct_ = self.load_obj(path+db)
 
-    def get_data(self, datadir):
+        _src_trn_ = np.transpose(_dct_[self.src_mod+"_data"] , (0, 3, 1, 2))
 
-        _dct_trn_ = self.load_obj(self.dacss_train_path)
+        _trg_trn_ = np.transpose(_dct_[self.trg_mod+"_data"], (0, 3, 2, 1))
+        _lbls_trn_ = _dct_[self.src_mod+"_lbls"]
 
-        _src_trn_ = np.transpose(_dct_trn_[self.src_mod+"_data"] , (0, 3, 1, 2))
-
-        _trg_trn_ = np.transpose(_dct_trn_[self.trg_mod+"_data"], (0, 3, 1, 2))
-        _lbls_trn_ = _dct_trn_[self.src_mod+"_lbls"]
-
-        _dct_tst_ = self.load_obj(self.dacss_test_path)
-        _src_tst_ = np.transpose(_dct_tst_[self.src_mod+"_data"], (0, 3, 1, 2))
-        _trg_tst_ = np.transpose(_dct_tst_[self.trg_mod+"_data"], (0, 3, 1, 2))
-        _lbls_tst_ = _dct_tst_[self.src_mod+"_lbls"]
+        _dct_ = self.load_obj(self.rv_test_path)
+        _src_tst_ = np.transpose(_dct_[self.src_mod+"_data"], (0, 3, 1, 2))
+        _trg_tst_ = np.transpose(_dct_[self.trg_mod+"_data"], (0, 3, 2, 1))
+        _lbls_tst_ = _dct_[self.src_mod+"_lbls"]
 
         _lbls_tst_ = np.reshape(_lbls_tst_, [_lbls_tst_.shape[0], 1])
         _lbls_trn_ = np.reshape(_lbls_trn_, [_lbls_trn_.shape[0], 1])
 
-        _src_trn_ = _norm_(_src_trn_)    
-        _trg_trn_ = _norm_(_trg_trn_)
-
-        _src_tst_ = _norm_(_src_tst_)
-        _trg_tst_ = _norm_(_trg_tst_)
-
-        _src_vld_ = _src_trn_[self._indx2_:]
-        _trg_vld_ = _trg_trn_[self._indx2_:]
-        _lbls_vld_ = _lbls_trn_[self._indx2_:]
-
-        _src_trn_ = _src_trn_[:self._indx_]
-        _trg_trn_ = _trg_trn_[:self._indx_]
-        _lbls_trn_ = _lbls_trn_[:self._indx_]
-
+        
         _rndz_ = np.arange(len(_src_trn_))
         np.random.shuffle(_rndz_)
         
@@ -93,36 +84,19 @@ class data_handle():
         _trg_trn_ = _trg_trn_[_rndz_]
         _lbls_trn_ = _lbls_trn_[_rndz_]
 
-        _rndz_ = np.arange(len(_src_vld_))
-        np.random.shuffle(_rndz_)
-
-        _src_vld_ = _src_vld_[_rndz_]
-        _trg_vld_ = _trg_vld_[_rndz_]
-        _lbls_vld_ = _lbls_vld_[_rndz_]
-
         _lbls_trn_ = to_categorical(_lbls_trn_)
         _lbls_trn_ = _lbls_trn_[:, 1:]
         
         _lbls_trn_ = self._sft_crisp_lbl_(_lbls_trn_)
 
-        _lbls_vld_ = to_categorical(_lbls_vld_)
-        _lbls_vld_ = _lbls_vld_[:, 1:]
-        
-        _lbls_vld_ = self._sft_crisp_lbl_(_lbls_vld_)
-
         _lbls_tst_ = to_categorical(_lbls_tst_)
         _lbls_tst_ = _lbls_tst_[:, 1:]
 
         _lbls_tst_ = self._sft_crisp_lbl_(_lbls_tst_)
-        
-        del _dct_trn_, _dct_tst_
 
         _dct_ = {"_src_trn_": _src_trn_,
             "_trg_trn_": _trg_trn_,
             "_lbls_trn_": _lbls_trn_,
-            "_src_vld_": _src_vld_,
-            "_trg_vld_": _trg_vld_,
-            "_lbls_vld_": _lbls_vld_,
             "_src_tst_": _src_tst_,
             "_trg_tst_": _trg_tst_,
             "_lbls_tst_": _lbls_tst_}

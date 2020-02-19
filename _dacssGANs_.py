@@ -4,7 +4,7 @@ import os, sys
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import argparse
 import cv2
@@ -42,7 +42,11 @@ class dacssGANs():
         self.batch_size = 32
         self.source_modality = "face"
         self.mod = "audio"
-        self.exp_tp = "without_lbls"
+
+        self.db = "RAVDESS"
+        self.db_path = "../../GANs_cnn/models/ravdess/trnNseq/"
+
+        self.exp_tp = "with_lbls"
         self.temporal = False
 
         self.images = 1
@@ -58,9 +62,7 @@ class dacssGANs():
         self.loss_path =  "../../GANs_assets/training_GANs/"
 
         self.hndl_obj = data_handle()
-
-        self.input_dim = 100
-        
+        self.input_dim = 108
 
 
     def _G_with_D_and_Q_(self, 
@@ -79,6 +81,7 @@ class dacssGANs():
 
         #merged = merge([inputs, x_generator], mode='concat', concat_axis=1)
         discriminator.trainable = False
+
         x_discriminator = discriminator(x_generator)
 
         classifier.trainable = False
@@ -156,160 +159,183 @@ class dacssGANs():
 
     def generator_l1_loss(self, y_true,y_pred):
         return K.mean(K.abs(K.flatten(y_pred) - K.flatten(y_true)), axis=-1)
+    
+
+    def _fl_in_dir_(self, _dir_):
+
+        return os.listdir(_dir_)
 
 
     def train(self): 
         
+        _dirs_ = self._fl_in_dir_(self.db_path)
         batch_size = self.batch_size
         loss_total = []
 
-        if self.temporal == True:
-            _dct_ = self.hndl_obj.load_3d_dataset(self.mod)
-        else:
-            _dct_ = self.hndl_obj.get_data('train') 
+        for _dir_ in _dirs_:
 
-        discriminator = discriminator_model()
-        
-        if self.temporal == False:
-            generator = generator_model(self.input_dim)
-        else:
-            generator = generator_model_temporal()
+            if self.temporal == True:
+                _dct_ = self.hndl_obj.load_3d_dataset(self.mod, self.db)
+            else:
+                _dct_ = self.hndl_obj.get_data('train', self.db_path,  _dir_)
 
-        classifier = lenet_classifier_model(6)
-
-        discriminator_and_classifier_on_generator = self._G_with_D_and_Q_(
-            generator, discriminator, classifier, self.temporal)
-        
-        generator.compile(loss=self.generator_l1_loss, optimizer=self.g_optim)
-
-        discriminator_and_classifier_on_generator.compile(
-            loss=[self.generator_l1_loss, self.discriminator_on_generator_loss, "categorical_crossentropy"],
-            optimizer="rmsprop")
-
-        discriminator.trainable = True
-        discriminator.compile(loss=self.discriminator_loss, optimizer=self.d_optim) # rmsprop
-        classifier.trainable = True
-        
-        classifier.compile(loss="categorical_crossentropy", optimizer=self.c_optim, metrics=['accuracy'])
-        classifier.load_weights(self.models_path+'classifier_28x112_'+self.mod)
-
-
-        generator.save_weights(self.models_path+
-            'gen_tmp_dacssGANs_'
-            +self.mod
-            +"_"
-            +self.exp_tp)
-
-        discriminator.save_weights(self.models_path
-            +'discr_tmp_dacssGANs_'
-            +self.mod 
-            +"_"
-            +self.exp_tp)
-
-
-        for epoch in range(300, 600):
+            discriminator = discriminator_model()
             
-            if epoch == 40:
-                loss_name = self.loss_path\
-                    +"training_loss_for_GANS_"\
-                    +self.mod\
-                    +"_"+self.exp_tp+"_"\
-                    + ".pkl"     
-                self.hndl_obj.store_obj(loss_name, loss_total)
+            if self.temporal == False:
+                generator = generator_model(self.input_dim)
+            else:
+                generator = generator_model_temporal()
 
-            print("Epoch is", epoch)
-            print("Number of batches", int(_dct_["_src_trn_"].shape[0] / batch_size))
-            for index in range(int(_dct_["_src_trn_"].shape[0] / batch_size)):
+            classifier = lenet_classifier_model(_dct_["_lbls_trn_"].shape[1])
+
+            discriminator_and_classifier_on_generator = self._G_with_D_and_Q_(
+                        generator, 
+                        discriminator, 
+                        classifier, 
+                        self.temporal)
+            
+            generator.compile(loss=self.generator_l1_loss, optimizer=self.g_optim)
+
+            discriminator_and_classifier_on_generator.compile(
+                loss=[self.generator_l1_loss, 
+                      self.discriminator_on_generator_loss, 
+                      "categorical_crossentropy"],
+                optimizer="rmsprop")
+
+            discriminator.trainable = True
+            discriminator.compile(loss=self.discriminator_loss, optimizer=self.d_optim) # rmsprop
+            classifier.trainable = True
+
+            classifier.compile(loss="categorical_crossentropy", optimizer=self.c_optim, metrics=['accuracy'])
+            # classifier.fit(_dct_["_trg_trn_"], _dct_["_lbls_trn_"], epochs = 50, verbose=1)
+
+            classifier.load_weights(self.models_path+'classifier_56x256_'+self.mod)
+            # classifier.save_weights(self.models_path+'classifier_56x256_'+self.mod, True)
+            # c_loss = classifier.evaluate(_dct_["_trg_trn_"], _dct_["_lbls_trn_"]) 
+
+            # generator.save_weights(self.models_path+
+            #     'gen_tmp_dacssGANs_'
+            #     +self.mod
+            #     +"_"
+            #     +self.exp_tp)
+
+            # discriminator.save_weights(self.models_path
+            #     +'discr_tmp_dacssGANs_'
+            #     +self.mod 
+            #     +"_"
+            #     +self.exp_tp)
+
+            self.input_dim = 100 + _dct_["_lbls_trn_"].shape[1]
+
+            for epoch in range(0, 500):
                 
-                source_image_batch = _dct_["_src_trn_"][index * batch_size:(index + 1) * batch_size]
-                image_batch = _dct_["_trg_trn_"][index * batch_size:(index + 1) * batch_size]
-                label_batch = _dct_["_lbls_trn_"][index * batch_size:(index + 1) * batch_size]  # replace with your data here
-
-                # self.store_image_maps(source_image_batch, "tempFaces.jpg") 
-                # self.store_image_maps(image_batch, "tempAudio.jpg") 
-                if self.temporal == False:
-                    noise = np.random.normal(0, 1, (batch_size, 100))
-                    #noise = np.concatenate([noise, label_batch], axis = 1)
-                    generated_images = generator.predict([source_image_batch, noise])
-                else:
-                    noise = np.random.normal(0, 1, (batch_size, 100))
-                    #noise = np.concatenate([noise, label_batch, source_image_batch], axis = 1)
-                    generated_images = generator.predict(noise)
-
-                # Create a function for it.
-                #image_batch = np.transpose(image_batch, (0, 2, 3, 1))
-                gauss1, gauss2 = self.augmented_noise(image_batch)
-                image_batch = image_batch + gauss1
-                generated_images = generated_images +gauss2
-
-                if index % 200 == 0:       
-                    file_name = "../../GANs_assets/generated_imgs/"\
+                if epoch == 300:
+                    loss_name = self.loss_path\
+                        +"training_loss_for_GANS_"\
                         +self.mod\
-                        +"/generated"\
-                        +str(epoch)+"_"\
+                        + "_" + self.db\
                         +"_"+self.exp_tp+"_"\
-                        +str(index)+".png"
+                        + ".pkl"     
+                    self.hndl_obj.store_obj(loss_name, loss_total)
 
-                    self.store_image_maps(generated_images, file_name)               
-                    file_name = "../../GANs_assets/generated_imgs/"\
-                        +self.mod+"/target_"\
-                        +str(epoch)\
-                        +"_"+str(index)\
-                        +"_"+self.exp_tp+"_"\
-                        +".png"
-
-                    self.store_image_maps(image_batch, file_name)
-
-                # Training D:
-                X = np.concatenate((image_batch, generated_images))
-                y = np.concatenate((np.zeros((self.batch_size, 1, 64, 64)), 
-                    np.ones((self.batch_size, 1, 64, 64))))
-                
-                d_loss = discriminator.train_on_batch(X, y)
-                print("batch %d d_loss : %f" % (index, d_loss))
-
-                discriminator.trainable = False
-
-                # Training C:
-                #c_loss = classifier.evaluate(generated_images, label_batch)
-                c_loss = classifier.train_on_batch(generated_images, label_batch)
-                print("batch %d c_loss : %f acc : %f" % (index, c_loss[0], c_loss[1]))
-
-                classifier.trainable = False
-                # Train G:
-                if self.temporal == False:
-                    g_loss = discriminator_and_classifier_on_generator.train_on_batch(
-                        [source_image_batch, noise], 
-                        [image_batch, np.ones((self.batch_size, 1, 64, 64)), label_batch])
-                else:
-                    g_loss = discriminator_and_classifier_on_generator.train_on_batch(
-                        [noise], 
-                        [image_batch, np.ones((100, 1, 64, 64)), label_batch])
-
-                discriminator.trainable = True
-                classifier.trainable = True
-                print("batch %d g_loss : %f" % (index, g_loss[1]))
-
-                
-                if index % 200 == 0:
+                print("Epoch is", epoch)
+                print("Number of batches", int(_dct_["_src_trn_"].shape[0] / batch_size))
+                for index in range(int(_dct_["_src_trn_"].shape[0] / batch_size)):
                     
-                    loss_total.append((g_loss, d_loss, c_loss[0], c_loss[1]))
-                    
-                    generator.save_weights(self.models_path+
-                        'gen_tmp_dacssGANs_'
-                        +self.mod
-                        +"_"
-                        +self.exp_tp, True)
+                    source_image_batch = _dct_["_src_trn_"][index * batch_size:(index + 1) * batch_size]
+                    image_batch = _dct_["_trg_trn_"][index * batch_size:(index + 1) * batch_size]
+                    label_batch = _dct_["_lbls_trn_"][index * batch_size:(index + 1) * batch_size]  # replace with your data here
 
-                    discriminator.save_weights(self.models_path
-                        +'discr_tmp_dacssGANs_'
-                        +self.mod 
-                        +"_"
-                        +self.exp_tp, True)
+                    # self.store_image_maps(source_image_batch, "tempFaces.jpg") 
+                    # self.store_image_maps(image_batch, "tempAudio.jpg") 
+                    if self.temporal == False:
+                        noise = np.random.normal(0, 1, (batch_size, 100))
+                        noise = np.concatenate([noise, label_batch], axis = 1)
+                        generated_images = generator.predict([source_image_batch, noise])
+                    else:
+                        noise = np.random.normal(0, 1, (batch_size, 100))
+                        noise = np.concatenate([noise, label_batch, source_image_batch], axis = 1)
+                        generated_images = generator.predict(noise)
+
+                    # Create a function for it.
+                    #image_batch = np.transpose(image_batch, (0, 2, 3, 1))
+                    gauss1, gauss2 = self.augmented_noise(image_batch)
+                    image_batch = image_batch + gauss1
+                    generated_images = generated_images +gauss2
+
+                    if index % 2000 == 0:       
+                        file_name = "../../GANs_assets/generated_imgs/"\
+                            +self.mod\
+                            +"/generated"\
+                            + "_" + self.db\
+                            +str(epoch)+"_"\
+                            +"_"+self.exp_tp+"_"\
+                            +str(index)+".png"
+
+                        self.store_image_maps(generated_images, file_name)               
+                        file_name = "../../GANs_assets/generated_imgs/"\
+                            +self.mod+"/target_"\
+                            + "_" + self.db\
+                            +str(epoch)\
+                            +"_"+str(index)\
+                            +"_"+self.exp_tp+"_"\
+                            +".png"
+
+                        self.store_image_maps(image_batch, file_name)
+
+                    # Training D:
+                    X = np.concatenate((image_batch, generated_images))
+                    y = np.concatenate((np.zeros((self.batch_size, 1, 64, 64)), 
+                        np.ones((self.batch_size, 1, 64, 64))))
+                    
+                    d_loss = discriminator.train_on_batch(X, y)
+                    print("batch %d d_loss : %f" % (index, d_loss))
+
+                    discriminator.trainable = False
+
+                    # Training C:
+                    c_loss = classifier.evaluate(generated_images, label_batch)
+                    #c_loss = classifier.train_on_batch(generated_images, label_batch)
+                    print("batch %d c_loss : %f acc : %f" % (index, c_loss[0], c_loss[1]))
+
+                    classifier.trainable = False
+                    # Train G:
+                    if self.temporal == False:
+                        g_loss = discriminator_and_classifier_on_generator.train_on_batch(
+                            [source_image_batch, noise], 
+                            [image_batch, np.ones((self.batch_size, 1, 64, 64)), label_batch])
+                    else:
+                        g_loss = discriminator_and_classifier_on_generator.train_on_batch(
+                            [noise], 
+                            [image_batch, np.ones((100, 1, 64, 64)), label_batch])
+
+                    discriminator.trainable = True
+                    classifier.trainable = True
+                    print("batch %d g_loss : %f" % (index, g_loss[1]))
+
+                    
+                    if index % 2000 == 0:
+                        
+                        loss_total.append((g_loss, d_loss, c_loss[0], c_loss[1]))
+                        
+                        generator.save_weights(self.models_path+
+                            'gen_tmp_dacssGANs_'
+                            + self.db+ "_"\
+                            +self.mod
+                            +"_"
+                            +self.exp_tp, True)
+
+                        discriminator.save_weights(self.models_path
+                            +'discr_tmp_dacssGANs_'
+                            + self.db+ "_"\
+                            +self.mod 
+                            +"_"
+                            +self.exp_tp, True)
 
         loss_name = self.loss_path\
                     +"training_loss_for_GANS_"\
                     +self.mod\
+                    + "_" + self.db\
                     +"_"+self.exp_tp+"_"\
                     + ".pkl" 
 
@@ -317,6 +343,5 @@ class dacssGANs():
 
 
 if __name__ == '__main__':
-    #load_temp()
     dacssGANS_ = dacssGANs()
     dacssGANS_ .train()

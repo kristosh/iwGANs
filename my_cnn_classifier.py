@@ -108,7 +108,11 @@ class my_cnn_classifier():
 
         for iteration in range(0,4):
             model.compile(optimizer=self.c_optim, loss='categorical_crossentropy', metrics=['accuracy'])
-            history = model.fit(train_data, train_labels, batch_size=self.batch_size, epochs = self.epochs, verbose=1, validation_data=(train_data, train_labels))      
+            history = model.fit(train_data, train_labels, 
+                batch_size=self.batch_size, 
+                epochs = self.epochs, 
+                verbose=1, 
+                validation_data=(train_data, train_labels))      
             
             c_loss = model.evaluate(test_data, test_labels) 
             print (c_loss)
