@@ -8,7 +8,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import argparse
 import cv2
-from keras.optimizers import SGD, Adagrad
+from keras.optimizers import SGD, Adagrad, RMSprop
 from PIL import Image
 from sklearn.utils import shuffle
 from keras import backend as K
@@ -43,16 +43,17 @@ class dacssGANs():
         self.source_modality = "face"
         self.mod = "audio"
 
-        self.db = "RAVDESS"
-        self.db_path = "../../GANs_cnn/models/ravdess/trnNseq/"
+        self.db = "CREMAD"
+        self.db_path_rv = "../../GANs_cnn/models/ravdess/trnNseq/"
+        self.db_path_cr = "../../GANs_cnn/models/"
 
         self.exp_tp = "with_lbls"
         self.temporal = False
 
         self.images = 1
-        self.d_optim = Adagrad(lr=0.00001)
-        self.g_optim = Adagrad(lr=0.00001)
-        self.c_optim = Adagrad(lr=0.00001)
+        self.d_optim = Adagrad(lr=0.0001)
+        self.g_optim = Adagrad(lr=0.0001)
+        self.c_optim = Adagrad(lr=0.0001)
 
         self.mean = 0
         self.var = 0.1
@@ -62,7 +63,7 @@ class dacssGANs():
         self.loss_path =  "../../GANs_assets/training_GANs/"
 
         self.hndl_obj = data_handle()
-        self.input_dim = 108
+        self.input_dim = 6
 
 
     def _G_with_D_and_Q_(self, 
@@ -168,7 +169,7 @@ class dacssGANs():
 
     def train(self): 
         
-        _dirs_ = self._fl_in_dir_(self.db_path)
+        _dirs_ = self._fl_in_dir_(self.db_path_rv)
         batch_size = self.batch_size
         loss_total = []
 
@@ -177,7 +178,10 @@ class dacssGANs():
             if self.temporal == True:
                 _dct_ = self.hndl_obj.load_3d_dataset(self.mod, self.db)
             else:
-                _dct_ = self.hndl_obj.get_data('train', self.db_path,  _dir_)
+                #_dct_ = self.hndl_obj.get_data_cp('train', self.db_path_cr,  _dir_)
+                _dct_ = self.hndl_obj.get_data_rv('train', self.db_path_rv,  _dir_)
+
+            index = 10     
 
             discriminator = discriminator_model()
             
@@ -206,26 +210,16 @@ class dacssGANs():
             discriminator.compile(loss=self.discriminator_loss, optimizer=self.d_optim) # rmsprop
             classifier.trainable = True
 
+            pdb.set_trace()
             classifier.compile(loss="categorical_crossentropy", optimizer=self.c_optim, metrics=['accuracy'])
-            # classifier.fit(_dct_["_trg_trn_"], _dct_["_lbls_trn_"], epochs = 50, verbose=1)
+            classifier.fit(_dct_["_trg_trn_"], _dct_["_lbls_trn_"], epochs = 50, verbose=1)
+            continue
+            #pdb.set_trace()
+            #classifier.load_weights(self.models_path+'classifier_28x112_'+self.mod)
+            #classifier.save_weights(self.models_path+'classifier_28x112_'+self.mod, True)
+            #c_loss = classifier.evaluate(_dct_["_trg_tst_"], _dct_["_lbls_tst_"]) 
 
-            classifier.load_weights(self.models_path+'classifier_56x256_'+self.mod)
-            # classifier.save_weights(self.models_path+'classifier_56x256_'+self.mod, True)
-            # c_loss = classifier.evaluate(_dct_["_trg_trn_"], _dct_["_lbls_trn_"]) 
-
-            # generator.save_weights(self.models_path+
-            #     'gen_tmp_dacssGANs_'
-            #     +self.mod
-            #     +"_"
-            #     +self.exp_tp)
-
-            # discriminator.save_weights(self.models_path
-            #     +'discr_tmp_dacssGANs_'
-            #     +self.mod 
-            #     +"_"
-            #     +self.exp_tp)
-
-            self.input_dim = 100 + _dct_["_lbls_trn_"].shape[1]
+            self.input_dim = 0 + _dct_["_lbls_trn_"].shape[1]
 
             for epoch in range(0, 500):
                 
@@ -249,12 +243,13 @@ class dacssGANs():
                     # self.store_image_maps(source_image_batch, "tempFaces.jpg") 
                     # self.store_image_maps(image_batch, "tempAudio.jpg") 
                     if self.temporal == False:
-                        noise = np.random.normal(0, 1, (batch_size, 100))
-                        noise = np.concatenate([noise, label_batch], axis = 1)
+                        #noise = np.random.normal(0, 1, (batch_size, 100))
+                        #noise = np.concatenate([noise, label_batch], axis = 1)
+                        noise = label_batch
                         generated_images = generator.predict([source_image_batch, noise])
                     else:
-                        noise = np.random.normal(0, 1, (batch_size, 100))
-                        noise = np.concatenate([noise, label_batch, source_image_batch], axis = 1)
+                        #noise = np.random.normal(0, 1, (batch_size, 100))
+                        #noise = np.concatenate([noise, label_batch, source_image_batch], axis = 1)
                         generated_images = generator.predict(noise)
 
                     # Create a function for it.

@@ -86,6 +86,8 @@ class WGANGP():
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = 15
         optimizer = RMSprop(lr=self.learning_param)
+
+        self.obj = data_handle()
         
         if self.target_mod == "audio":
             self.img_rows = 28
@@ -213,17 +215,17 @@ class WGANGP():
 
     def train(self, epochs, batch_size, sample_interval=50):
         
-        my_model = self.load_model_from_yaml(
-            "../../GANs_models/"
-            +self.input_feats
-            +"_gen_noise_feats_generator_model.yaml")
+        # my_model = self.load_model_from_yaml(
+        #     "../../GANs_models/"
+        #     +self.input_feats
+        #     +"_gen_noise_feats_generator_model.yaml")
 
         # print(my_model.summary())
 
         if self.input_feats == "3dCNN":
-            _dct_ = load_3d_dataset(self.target_mod)
+            _dct_ = self.obj.load_3d_dataset(self.target_mod)
         else:
-            _dct_ = temporal_feats(self.target_mod, 1, 
+            _dct_ = self.obj.temporal_feats(self.target_mod, 1, 
                 self.no_input_feats, 
                 self.input_feats, 
                 self.db_path)
@@ -236,8 +238,6 @@ class WGANGP():
         fake =  np.ones((batch_size, 1))
         dummy = np.zeros((batch_size, 1)) # Dummy gt for gradient penalty
 
-        # self.gen_data_iwGANs(_dct_, file_name) 
-        
         try:
             del valid_target
             del test_target
@@ -378,23 +378,25 @@ class WGANGP():
             axis = 1)
         
         gen_train = self.generator.predict([noise])
-
-        for index in range(0, 5):
+        pdb.set_trace()
+        for index in range(0, 2):
             
-            gen_data = {"gen_test": gen_train[75000*index:(75000+ 75000*index)], 
-                "lbls_test": _dct_["lbls_test"][75000*index:(75000+ 75000*index)]}
+            gen_data = {"gen_train": gen_train[75000*index:(75000+ 75000*index)], 
+                "lbls_train": _dct_["lbls_test"][75000*index:(75000+ 75000*index)]}
 
             stored_name = "../../GANs_models/" \
                 +self.input_feats \
-                +"_gen_audio_face_test_feat_" \
+                +"_gen_audio_face_feat_" \
                 +str(index) \
                 +".pkl"
 
-            store_obj(stored_name, gen_data)
+            self.obj.store_obj(stored_name, gen_data)
             gen_data = None  
 
 
 if __name__ == '__main__':
 
     wgan = WGANGP()
-    wgan.train(epochs=50000, batch_size=32, sample_interval=100)
+    wgan.train(epochs=50000, 
+            batch_size=32, 
+            sample_interval=100)

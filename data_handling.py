@@ -57,9 +57,69 @@ class data_handle():
     def store_obj(self, filename, obj):
         with open(filename, "wb") as fp:  # Pickling
             pickle.dump(obj, fp, protocol=4)
-    
 
-    def get_data(self, datadir, path,  db):
+
+    def get_data_cp(self, datadir, path,  db):
+
+        _dct_ = self.load_obj(path + 
+            "_full_spec_new_train_112_28.pkl")
+
+        _src_trn_ = np.transpose(
+            _dct_[self.src_mod+"_data"], (0, 3, 1, 2))
+        _trg_trn_ = np.transpose(
+            _dct_[self.trg_mod+"_data"], (0, 3, 1, 2))
+        _lbls_trn_ = _dct_[self.src_mod+"_lbls"]
+
+        _dct_ = self.load_obj(path + 
+            "_full_spec_new_test_112_28.pkl")
+
+        _src_tst_ = np.transpose(
+            _dct_[self.src_mod+"_data"], (0, 3, 1, 2))
+        _trg_tst_ = np.transpose(
+            _dct_[self.trg_mod+"_data"], (0, 3, 1, 2))
+        _lbls_tst_ = _dct_[self.src_mod+"_lbls"]
+
+        _lbls_tst_ = np.reshape(
+            _lbls_tst_, 
+            [_lbls_tst_.shape[0], 1])
+        _lbls_trn_ = np.reshape(
+            _lbls_trn_, 
+            [_lbls_trn_.shape[0], 1])
+
+        _src_trn_ = _norm_(_src_trn_)
+        _trg_trn_ = _norm_(_trg_trn_)
+
+        _src_tst_ = _norm_(_src_tst_)
+        _trg_tst_ = _norm_(_trg_tst_)
+
+        rndz = np.arange(len(_src_trn_))
+        np.random.shuffle(rndz)
+
+        _src_trn_ = _src_trn_[rndz]
+        _trg_trn_ = _trg_trn_[rndz]
+        _lbls_trn_ = _lbls_trn_[rndz]
+
+        _lbls_trn_ = to_categorical(_lbls_trn_)
+        _lbls_trn_ = _lbls_trn_[:, 1:]
+        
+        _lbls_trn_ = self._sft_crisp_lbl_(_lbls_trn_)
+
+        _lbls_tst_ = to_categorical(_lbls_tst_)
+        _lbls_tst_ = _lbls_tst_[:, 1:]
+
+        _lbls_tst_ = self._sft_crisp_lbl_(_lbls_tst_)
+
+        _dct_ = {"_src_trn_": _src_trn_,
+                "_trg_trn_": _trg_trn_,
+                "_lbls_trn_": _lbls_trn_,
+                "_src_tst_": _src_tst_,
+                "_trg_tst_": _trg_tst_,
+                "_lbls_tst_": _lbls_tst_}
+
+        return _dct_
+
+    
+    def get_data_rv(self, datadir, path,  db):
         
         _dct_ = self.load_obj(path+db)
 
@@ -75,7 +135,6 @@ class data_handle():
 
         _lbls_tst_ = np.reshape(_lbls_tst_, [_lbls_tst_.shape[0], 1])
         _lbls_trn_ = np.reshape(_lbls_trn_, [_lbls_trn_.shape[0], 1])
-
         
         _rndz_ = np.arange(len(_src_trn_))
         np.random.shuffle(_rndz_)
@@ -97,8 +156,52 @@ class data_handle():
         _dct_ = {"_src_trn_": _src_trn_,
             "_trg_trn_": _trg_trn_,
             "_lbls_trn_": _lbls_trn_,
-            "_src_tst_": _src_tst_,
-            "_trg_tst_": _trg_tst_,
+            "_src_tst_": _norm_(_src_tst_),
+            "_trg_tst_": _norm_(_trg_tst_),
+            "_lbls_tst_": _lbls_tst_}
+
+        return _dct_
+
+
+    def get_data_rv(self, datadir, path,  db):
+        
+        _dct_ = self.load_obj(path+db)
+
+        _src_trn_ = np.transpose(_dct_[self.src_mod+"_data"] , (0, 3, 1, 2))
+
+        _trg_trn_ = np.transpose(_dct_[self.trg_mod+"_data"], (0, 3, 2, 1))
+        _lbls_trn_ = _dct_[self.src_mod+"_lbls"]
+
+        _dct_ = self.load_obj(self.rv_test_path)
+        _src_tst_ = np.transpose(_dct_[self.src_mod+"_data"], (0, 3, 1, 2))
+        _trg_tst_ = np.transpose(_dct_[self.trg_mod+"_data"], (0, 3, 2, 1))
+        _lbls_tst_ = _dct_[self.src_mod+"_lbls"]
+
+        _lbls_tst_ = np.reshape(_lbls_tst_, [_lbls_tst_.shape[0], 1])
+        _lbls_trn_ = np.reshape(_lbls_trn_, [_lbls_trn_.shape[0], 1])
+        
+        _rndz_ = np.arange(len(_src_trn_))
+        np.random.shuffle(_rndz_)
+        
+        _src_trn_ = _src_trn_[_rndz_]
+        _trg_trn_ = _trg_trn_[_rndz_]
+        _lbls_trn_ = _lbls_trn_[_rndz_]
+
+        _lbls_trn_ = to_categorical(_lbls_trn_)
+        _lbls_trn_ = _lbls_trn_[:, 1:]
+        
+        _lbls_trn_ = self._sft_crisp_lbl_(_lbls_trn_)
+
+        _lbls_tst_ = to_categorical(_lbls_tst_)
+        _lbls_tst_ = _lbls_tst_[:, 1:]
+
+        _lbls_tst_ = self._sft_crisp_lbl_(_lbls_tst_)
+
+        _dct_ = {"_src_trn_": _src_trn_,
+            "_trg_trn_": _trg_trn_,
+            "_lbls_trn_": _lbls_trn_,
+            "_src_tst_": _norm_(_src_tst_),
+            "_trg_tst_": _norm_(_trg_tst_),
             "_lbls_tst_": _lbls_tst_}
 
         return _dct_

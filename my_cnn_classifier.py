@@ -4,7 +4,7 @@ import os
 def cls(): os.system('clear')
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import numpy as np
 import matplotlib
@@ -45,7 +45,7 @@ class my_cnn_classifier():
         self.c_optim = RMSprop(lr=0.0001, decay=1e-6)
         self.epochs = 15
 
-        self.type_of_features = "3dCNN"
+        self.type_of_features = "prime"
 
         self.my_obj = data_handle()
 
@@ -55,7 +55,7 @@ class my_cnn_classifier():
         data_list = []
         lbls_list = []
         for index in range(0, 2):      
-            dict_ = load_obj("../../GANs_models/"+type_of_feats+"_gen_audio_face_feat_"+str(index)+".pkl")            
+            dict_ = self.my_obj.load_obj("../../GANs_models/"+type_of_feats+"_gen_audio_face_feats_"+str(index)+".pkl")            
             data = dict_["gen_train"] 
             lbls_list.append(dict_["lbls_train"])       
             data_list.append(data.transpose(0, 3, 1, 2))
@@ -76,8 +76,8 @@ class my_cnn_classifier():
         train_target = train_target[:(gen_1.shape[0]+ gen_1.shape[1])] #.train_data
         train_labels = _dct_["trn_lbls"][:(gen_1.shape[0]+ gen_1.shape[1])]
 
-        train_data = np.concatenate((train_target,  gen_1, gen_2), axis=0)
-        train_labels = np.concatenate((train_labels, gen_lbls_1, gen_lbls_2), axis=0)
+        train_data = np.concatenate((train_target,  gen_1), axis=0)
+        train_labels = np.concatenate((train_labels, gen_lbls_1), axis=0)
         
         #train_data = train_target
         #train_labels = _dct_["trn_lbls"][:(gen_1.shape[0]+ gen_1.shape[1])]
@@ -104,8 +104,6 @@ class my_cnn_classifier():
         total_loss = []
         total_cm = []
         
-        pdb.set_trace()
-
         for iteration in range(0,4):
             model.compile(optimizer=self.c_optim, loss='categorical_crossentropy', metrics=['accuracy'])
             history = model.fit(train_data, train_labels, 
@@ -120,10 +118,9 @@ class my_cnn_classifier():
             total_loss.append(c_loss)      
             cnf_matrix = self.plot_confusion_matrix(y_pred, test_labels, iteration)
             total_cm.append(cnf_matrix)
-            pdb.set_trace()
 
-        store_obj("total_loss_transfoermers.pkl", total_loss)
-        store_obj("total_cm_transormers.pkl", total_cm)
+        self.my_obj.store_obj("total_loss_transfoermers.pkl", total_loss)
+        self.my_obj.store_obj("total_cm_transormers.pkl", total_cm)
 
 
     def plot_confusion_matrix(self, y_pred, test_labels, iteration):

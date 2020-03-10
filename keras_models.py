@@ -62,12 +62,12 @@ def generator_model_temporal():
     model = Model([inputs], output=e14)
     return model
 
-def generator_model(cond_dim):
+
+def generator_model(input_dim):
 
     global batch_size
     inputs = Input((in_ch, img_cols, img_rows)) 
-    input_conditional = Input(shape=(cond_dim,))
-    
+    input_conditional = Input(shape=(input_dim,))
     e0 = BatchNormGAN()(inputs)
     e1 = Flatten()(e0)
     e2 = Concatenate()([e1, input_conditional])   
@@ -91,19 +91,11 @@ def generator_model(cond_dim):
     e6 = Dense(512, activation="linear")(e5)
     e6 = LeakyReLU(alpha=0.1)(e6)
     e7 = BatchNormGAN()(e6)
-    
-    e8 = Dense(2048, activation="linear")(e7)
+    e8 = Dense(512, activation="linear")(e7)
     e9 = LeakyReLU(alpha=0.1)(e8)
     e10 = BatchNormGAN()(e9)
-    e11 = Dense(3 * 56 *224, activation="relu")(e10)
-    e12  = Reshape((3, 56, 224))(e11)
-
-    # e8 = Dense(512, activation="linear")(e7)
-    # e9 = LeakyReLU(alpha=0.1)(e8)
-    # e10 = BatchNormGAN()(e9)
-    # e11 = Dense(3 * 28 *112, activation="relu")(e10)
-    # e12  = Reshape((3, 28, 112))(e11)
-
+    e11 = Dense(3 * 28 *112, activation="relu")(e10)
+    e12  = Reshape((3, 28, 112))(e11)
     e13 = BatchNormGAN()(e12)
     e14 = Activation('tanh')(e13)
 
@@ -111,25 +103,26 @@ def generator_model(cond_dim):
     return model
 
 
+
 def discriminator_model():
     """ return a (b, 1) logits"""
     model = Sequential()
-    #model.add(Convolution2D(64, 4, 4,border_mode='same',input_shape=(3, 28, 112)))
-    model.add(Convolution2D(64, 4, 4,border_mode='same',input_shape=(3, 56, 224)))
+    model.add(Convolution2D(64, 4, 4,border_mode='same',input_shape=(3, 28, 112)))
     model.add(BatchNormGAN())
     model.add(LeakyReLU(alpha=0.1))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-
     model.add(Convolution2D(128, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
     model.add(LeakyReLU(alpha=0.1))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-
-
-    model.add(Convolution2D(128, 4, 4,border_mode='same'))
+    model.add(Convolution2D(512, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
-    model.add(LeakyReLU(alpha=0.1))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Convolution2D(1024, 4, 4,border_mode='same'))
+    model.add(BatchNormGAN())
+    model.add(Convolution2D(512, 4, 4,border_mode='same'))
+    model.add(BatchNormGAN())
+    model.add(Convolution2D(512, 4, 4,border_mode='same'))
+    model.add(BatchNormGAN())
     model.add(Convolution2D(512, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
     model.add(Convolution2D(512, 4, 4,border_mode='same'))
@@ -138,14 +131,6 @@ def discriminator_model():
     model.add(BatchNormGAN())
     model.add(Convolution2D(256, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
-    # model.add(Convolution2D(128, 4, 4,border_mode='same'))
-    # model.add(BatchNormGAN())
-    # model.add(Convolution2D(128, 4, 4,border_mode='same'))
-    # model.add(BatchNormGAN())
-    # model.add(Convolution2D(256, 4, 4,border_mode='same'))
-    # model.add(BatchNormGAN())
-    # model.add(Convolution2D(256, 4, 4,border_mode='same'))
-    # model.add(BatchNormGAN())
     model.add(LeakyReLU(alpha=0.1))
     model.add(Convolution2D(1, 4, 4,border_mode='same'))
     model.add(BatchNormGAN())
@@ -153,6 +138,7 @@ def discriminator_model():
     model.add(Activation('sigmoid'))
     #model.summary()
     return model
+
 
 def lenet_classifier_model_face(nb_classes):
     # Snipped by Fabien Tanc - https://www.kaggle.com/ftence/keras-cnn-inspired-by-lenet-5
@@ -209,13 +195,7 @@ def lenet_classifier_model(nb_classes):
     # Snipped by Fabien Tanc - https://www.kaggle.com/ftence/keras-cnn-inspired-by-lenet-5
     # Replace with your favorite classifier...
     model = Sequential()
-    #model.add(Convolution2D(12, 5, 5, activation='linear', input_shape=(3,28,112), init='he_normal'))
-    model.add(Convolution2D(12, 5, 5, activation='linear', input_shape=(3,56,224), init='he_normal'))
-
-    model.add(Convolution2D(25, 5, 5, activation='linear', init='he_normal'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(LeakyReLU(alpha=0.1))
-
+    model.add(Convolution2D(12, 5, 5, activation='linear', input_shape=(3,28,112), init='he_normal'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(LeakyReLU(alpha=0.1))
     model.add(Convolution2D(25, 5, 5, activation='linear', init='he_normal'))
