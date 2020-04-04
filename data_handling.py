@@ -218,7 +218,7 @@ class data_handle():
 
         _dt_ = self.load_obj(db_path+
             feats_type+"_"+
-            str(size_of_feats)+"_"+
+            str(size_of_feats)+"_da_"+
             str(fold_indx)+
             ".pkl")
 
@@ -229,8 +229,8 @@ class data_handle():
 
         _dt_ = self.load_obj(db_path+
             feats_type+"_"+
-            str(size_of_feats)+"_"+
-            str(2)+
+            str(size_of_feats)+"_da_"+
+            str("test")+
             ".pkl")
 
         test_feats= _dt_["feats_train"]
@@ -239,8 +239,8 @@ class data_handle():
 
         _dt_ = self.load_obj(db_path+
             feats_type+"_"+
-            str(size_of_feats)+"_"+
-            str(2)+
+            str(size_of_feats)+"_da_"+
+            str("test")+
             ".pkl")
 
         valid_feats= _dt_["feats_train"]

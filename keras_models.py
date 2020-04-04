@@ -10,6 +10,8 @@ from keras.layers import Input, merge, Convolution2D, MaxPooling2D, UpSampling2D
 from keras.layers import LeakyReLU
 from keras.layers import LSTM
 
+import pdb
+
 #from skimage.transform import resize
 from normalization import BatchNormGAN
 #from keras import backend as K
@@ -68,6 +70,7 @@ def generator_model(input_dim):
     global batch_size
     inputs = Input((in_ch, img_cols, img_rows)) 
     input_conditional = Input(shape=(input_dim,))
+
     e0 = BatchNormGAN()(inputs)
     e1 = Flatten()(e0)
     e2 = Concatenate()([e1, input_conditional])   
@@ -445,6 +448,52 @@ def build_generator_face(latent_dim, channels):
 
     return mdl
 
+
+def build_generator_updated(latent_dim, channels):
+
+    inputs = Input((in_ch, img_cols, img_rows)) 
+    input_conditional = Input(shape=(latent_dim,))
+
+    e0 = BatchNormGAN()(inputs)
+    e1 = Flatten()(e0)
+    e2 = Concatenate()([e1, input_conditional])  
+
+    pdb.set_trace()
+    model = Sequential()
+    model.add(Dense(128 * 7 * 7, activation="relu" )) #input_dim
+    model.add(Reshape((7, 7, 128)))
+    model.add(UpSampling2D())
+    model.add(Conv2D(128, kernel_size=4, padding="same"))
+    model.add(BatchNormalization(momentum=0.8))
+    model.add(Activation("relu"))
+    model.add(UpSampling2D())
+    model.add(Conv2D(64, kernel_size=4, padding="same"))
+    model.add(BatchNormalization(momentum=0.8))
+    model.add(Activation("relu"))
+
+    #model.add(UpSampling2D(size=(1, 2)))
+    model.add(Conv2D(64, kernel_size=4, padding="same"))
+    model.add(BatchNormalization(momentum=0.8))
+    model.add(Activation("relu"))
+
+    #model.add(UpSampling2D(size=(1, 2)))
+    model.add(Conv2D(64, kernel_size=4, padding="same"))
+    model.add(BatchNormalization(momentum=0.8))
+    model.add(Activation("relu"))
+
+    model.add(Conv2D(channels, kernel_size=4, padding="same"))
+    model.add(Activation("tanh"))
+
+    model.summary()
+
+    noise = Input(shape=(latent_dim,))
+    img = model(noise)
+
+    mdl = Model(noise, output = img)
+
+    return mdl
+
+
 def build_generator(latent_dim, channels):
 
     model = Sequential()
@@ -486,7 +535,7 @@ def build_generator(latent_dim, channels):
     model.add(Activation("tanh"))
 
     model.summary()
-
+    #pdb.set_trace()
     noise = Input(shape=(latent_dim,))
     img = model(noise)
 

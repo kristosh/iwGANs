@@ -4,7 +4,7 @@ import os, sys
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 import argparse
 import cv2
@@ -43,8 +43,8 @@ class dacssGANs():
         self.source_modality = "face"
         self.mod = "audio"
 
-        self.db = "CREMAD"
-        self.db_path_rv = "../../GANs_cnn/models/ravdess/trnNseq/"
+        self.db = "ravdess"
+        self.db_path_rv = "../../GANs_cnn/models/ravdess/ravdess/"
         self.db_path_cr = "../../GANs_cnn/models/"
 
         self.exp_tp = "with_lbls"
@@ -63,7 +63,7 @@ class dacssGANs():
         self.loss_path =  "../../GANs_assets/training_GANs/"
 
         self.hndl_obj = data_handle()
-        self.input_dim = 6
+        self.input_dim = 8
 
 
     def _G_with_D_and_Q_(self, 
@@ -173,6 +173,35 @@ class dacssGANs():
         batch_size = self.batch_size
         loss_total = []
 
+        discriminator = discriminator_model()
+            
+        if self.temporal == False:
+            generator = generator_model(self.input_dim)
+        else:
+            generator = generator_model_temporal()
+
+        classifier = lenet_classifier_model(8)
+
+        discriminator_and_classifier_on_generator = self._G_with_D_and_Q_(
+                    generator, 
+                    discriminator, 
+                    classifier, 
+                    self.temporal)
+        
+        generator.compile(loss=self.generator_l1_loss, optimizer=self.g_optim)
+
+        discriminator_and_classifier_on_generator.compile(
+            loss=[self.generator_l1_loss, 
+                    self.discriminator_on_generator_loss, 
+                    "categorical_crossentropy"],
+            optimizer="rmsprop")
+
+        discriminator.trainable = True
+        discriminator.compile(loss=self.discriminator_loss, optimizer=self.d_optim) # rmsprop
+        classifier.trainable = True
+
+        classifier.compile(loss="categorical_crossentropy", optimizer=self.c_optim, metrics=['accuracy'])
+
         for _dir_ in _dirs_:
 
             if self.temporal == True:
@@ -183,40 +212,13 @@ class dacssGANs():
 
             index = 10     
 
-            discriminator = discriminator_model()
-            
-            if self.temporal == False:
-                generator = generator_model(self.input_dim)
-            else:
-                generator = generator_model_temporal()
-
-            classifier = lenet_classifier_model(_dct_["_lbls_trn_"].shape[1])
-
-            discriminator_and_classifier_on_generator = self._G_with_D_and_Q_(
-                        generator, 
-                        discriminator, 
-                        classifier, 
-                        self.temporal)
-            
-            generator.compile(loss=self.generator_l1_loss, optimizer=self.g_optim)
-
-            discriminator_and_classifier_on_generator.compile(
-                loss=[self.generator_l1_loss, 
-                      self.discriminator_on_generator_loss, 
-                      "categorical_crossentropy"],
-                optimizer="rmsprop")
-
-            discriminator.trainable = True
-            discriminator.compile(loss=self.discriminator_loss, optimizer=self.d_optim) # rmsprop
-            classifier.trainable = True
-
-            pdb.set_trace()
-            classifier.compile(loss="categorical_crossentropy", optimizer=self.c_optim, metrics=['accuracy'])
-            classifier.fit(_dct_["_trg_trn_"], _dct_["_lbls_trn_"], epochs = 50, verbose=1)
-            continue
+           
+            #classifier.fit(_dct_["_trg_trn_"], _dct_["_lbls_trn_"], epochs = 50, verbose=1)
             #pdb.set_trace()
-            #classifier.load_weights(self.models_path+'classifier_28x112_'+self.mod)
-            #classifier.save_weights(self.models_path+'classifier_28x112_'+self.mod, True)
+            #continue
+            
+            classifier.load_weights(self.models_path+'classifier_rav_28x112_'+self.mod)
+            #classifier.save_weights(self.models_path+'classifier_rav_28x112_'+self.mod, True)
             #c_loss = classifier.evaluate(_dct_["_trg_tst_"], _dct_["_lbls_tst_"]) 
 
             self.input_dim = 0 + _dct_["_lbls_trn_"].shape[1]

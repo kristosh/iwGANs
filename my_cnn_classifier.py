@@ -118,6 +118,7 @@ class my_cnn_classifier():
             total_loss.append(c_loss)      
             cnf_matrix = self.plot_confusion_matrix(y_pred, test_labels, iteration)
             total_cm.append(cnf_matrix)
+            pdb.set_trace()
 
         self.my_obj.store_obj("total_loss_transfoermers.pkl", total_loss)
         self.my_obj.store_obj("total_cm_transormers.pkl", total_cm)
@@ -130,7 +131,7 @@ class my_cnn_classifier():
         cnf_matrix = confusion_matrix(test_labels_, ret)   
         class_names = ["hap", "sad", "ang", "fea", "dis", "neu"]
         plot_confusion_matrix(cnf_matrix, classes=class_names, title='Confusion matrix for generated specs')
-        #plt.savefig("confusionMatrix_genPlusReal_"+str(iteration)+".png")
+        plt.savefig("confusionMatrix_genPlusReal_"+str(iteration)+".png")
         plt.close()
 
 
