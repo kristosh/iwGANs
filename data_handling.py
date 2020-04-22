@@ -31,6 +31,7 @@ class data_handle():
         self.rv_test_path = "../../GANs_cnn/models/ravdess/test_non_seq_rav.pkl"
 
         self.db_3d = "../../GANs_cnn/models/complete.pkl"
+        self.db_3d_ravdess = "../../GANs_cnn/models/ravdess/3d/"
         self.wgans_path = "../models/complete.pkl"
 
         self._indx_ = 180000
@@ -167,6 +168,8 @@ class data_handle():
         
         _dct_ = self.load_obj(path+db)
 
+        pdb.set_trace()
+        
         _src_trn_ = np.transpose(_dct_[self.src_mod+"_data"] , (0, 3, 1, 2))
 
         _trg_trn_ = np.transpose(_dct_[self.trg_mod+"_data"], (0, 3, 2, 1))
@@ -247,19 +250,63 @@ class data_handle():
         valid_target = _dt_["target_train"]
         lbls_valid = _dt_["lbls_train"]
 
-        _dct_ = {"train_feats": train_feats, 
-                "valid_feats": valid_feats, 
-                "test_feats": test_feats,
-                "train_target": train_target, 
-                "valid_target": valid_target, 
-                "test_target": test_target,
-                "lbls_train": lbls_train, 
-                "lbls_valid": lbls_valid, 
-                "lbls_test": lbls_test,
+        _dct_ = {"trn_fts": train_feats, 
+                "vld_fts": valid_feats, 
+                "tst_fts": test_feats,
+                "trn_trg": train_target, 
+                "vld_trg": valid_target, 
+                "tst_trg": test_target,
+                "trn_lbls": lbls_train, 
+                "vld_lbls": lbls_valid, 
+                "tst_lbls": lbls_test,
                 }
 
         return _dct_
 
+
+    def load_3d_dataset_rav(self, target):
+        
+        files = os.listdir(self.db_3d_ravdess)
+            
+        _dt_train = self.load_obj(self.db_3d_ravdess + files[0])
+
+        trn_fts= _dt_train["feats_train"]
+        trn_trg = _dt_train["target_train"]
+        trn_lbls = _dt_train["lbls_train"]
+        trn_trg = _norm_(trn_trg)
+
+        tst_fts = _dt_train["feats_tst"]
+        tst_trg = _dt_train["target_test"]
+        tst_lbls= _dt_train["lbls_test"]
+        tst_trg = _norm_(tst_trg)
+        
+        randomize = np.arange(len(trn_fts))
+        np.random.shuffle(randomize)
+        trn_fts = trn_fts[randomize]
+        trn_trg = trn_trg[randomize]
+        trn_lbls = trn_lbls[randomize]
+
+        randomize = np.arange(len(tst_fts))
+        np.random.shuffle(randomize)
+        tst_fts = tst_fts[randomize]
+        tst_trg = tst_trg[randomize]
+        tst_lbls = tst_lbls[randomize]
+
+        trn_lbls = self._sft_crisp_lbl_(trn_lbls)
+        tst_lbls = self._sft_crisp_lbl_(tst_lbls)
+        
+        _dct_ = {"trn_fts": trn_fts, 
+            "trn_trg": trn_trg, 
+            "trn_lbls": trn_lbls,
+            "vld_fts": tst_fts, 
+            "vld_trg": tst_trg, 
+            "vld_lbls": tst_lbls,
+            "tst_fts": tst_fts, 
+            "tst_trg": tst_trg, 
+            "tst_lbls": tst_lbls,
+            }
+
+        return _dct_
 
     def load_3d_dataset(self, target):
 
@@ -310,39 +357,102 @@ class data_handle():
 
         
         elif target == "face":
-
-            data = self.load_obj("models/extrAudioFeats64.pkl") 
-
-            trn_feats= data["trainFeats"]
-            trn_tgt = data["face_train"]
-            trn_lbls = data["train_lbls"]
-        
-            tst_fts= data["testFeats"]
-            tst_trg = data["face_test"]
             
-            tst_lbls= data["test_lbls"]
+            face_path_train = "../../GANs_models/cremad/train_cremad.pkl"
+            face_path_test = "../../GANs_models/cremad/test_cremad.pkl"
+
+            _dt_ = self.load_obj(face_path_train)
+
+           
+            trn_fts= _dt_["specs_train"]
+            trn_trg = _dt_["face_train"]
+            trn_lbls = _dt_["train_lbls"]
+
+            trn_trg = _norm_(trn_trg)
+
+            _dt_ = self.load_obj(face_path_test)
+
+            tst_fts = _dt_["specs_train"]
+            tst_trg = _dt_["face_train"]
+            tst_lbls= _dt_["train_lbls"]
+            tst_trg = _norm_(tst_trg)
             
-            randomize = np.arange(len(trn_feats))
+            randomize = np.arange(len(trn_fts))
             np.random.shuffle(randomize)
-            trn_feats = trn_feats[randomize]
-            trn_tgt = trn_tgt[randomize]
+            trn_fts = trn_fts[randomize]
+            trn_trg = trn_trg[randomize]
             trn_lbls = trn_lbls[randomize]
+
+            randomize = np.arange(len(tst_fts))
+            np.random.shuffle(randomize)
+            tst_fts = tst_fts[randomize]
+            tst_trg = tst_trg[randomize]
+            tst_lbls = tst_lbls[randomize]
+
+            trn_lbls = to_categorical(trn_lbls)
+            trn_lbls = trn_lbls[:, 1:]
+
+            tst_lbls = to_categorical(tst_lbls)
+            tst_lbls = tst_lbls[:, 1:]
 
             trn_lbls = self._sft_crisp_lbl_(trn_lbls)
             tst_lbls = self._sft_crisp_lbl_(tst_lbls)
 
-            trn_tgt = trn_tgt.transpose(0,2,3,1)
-            tst_trg = tst_trg.transpose(0,2,3,1)
-
-            _dct_ = {"trn_feats": trn_feats, 
-                "trn_tgt": trn_tgt, 
+            _dct_ = {"trn_fts": trn_fts, 
+                "trn_trg": trn_trg, 
                 "trn_lbls": trn_lbls,
+                "vld_fts": trn_fts, 
+                "vld_trg": trn_trg, 
+                "vld_lbls": trn_lbls,
                 "tst_fts": tst_fts, 
                 "tst_trg": tst_trg, 
                 "tst_lbls": tst_lbls,
                 }
-            
+
             return _dct_
+
+   
+    def load_3d_dataset_v2(self, target):
+           
+        path = "../models/2dCNN_features.pkl"
+
+        _dt_ = self.load_obj(path)
+
+        trn_fts= _dt_["trn_fts"]
+        trn_trg = _dt_["trn_trg"]
+        trn_lbls = _dt_["trn_lbls"]
+
+        tst_fts = _dt_["tst_fts"]
+        tst_trg = _dt_["trn_trg"]
+        tst_lbls= _dt_["trn_lbls"]
+
+        trn_fts = _norm_(trn_fts)
+        tst_fts = _norm_(tst_fts)
+                
+        randomize = np.arange(len(trn_fts))
+        np.random.shuffle(randomize)
+        trn_fts = trn_fts[randomize]
+        trn_trg = trn_trg[randomize]
+        trn_lbls = trn_lbls[randomize]
+
+        randomize = np.arange(len(tst_fts))
+        np.random.shuffle(randomize)
+        tst_fts = tst_fts[randomize]
+        tst_trg = tst_trg[randomize]
+        tst_lbls = tst_lbls[randomize]
+
+        _dct_ = {"trn_fts": trn_fts, 
+            "trn_trg": trn_trg, 
+            "trn_lbls": trn_lbls,
+            "vld_fts": trn_fts, 
+            "vld_trg": trn_trg, 
+            "vld_lbls": trn_lbls,
+            "tst_fts": tst_fts, 
+            "tst_trg": tst_trg, 
+            "tst_lbls": tst_lbls,
+            }
+
+        return _dct_
 
                                
 

@@ -378,7 +378,7 @@ def cnnModel(input_shape, nClasses):
     return model
 
 
-#==========================================
+
 #==========================================
 #=============WGANS models=================
 def build_generator_old(latent_dim):
@@ -426,12 +426,14 @@ def build_generator_face(latent_dim, channels):
     model.add(BatchNormalization(momentum=0.8))
     model.add(Activation("relu"))
 
-    #model.add(UpSampling2D(size=(1, 2)))
+    #model.add(UpSampling2D(size=(2, 2)))
+    
     model.add(Conv2D(64, kernel_size=4, padding="same"))
     model.add(BatchNormalization(momentum=0.8))
     model.add(Activation("relu"))
 
-    #model.add(UpSampling2D(size=(1, 2)))
+    #model.add(UpSampling2D(size=(2, 2)))
+    
     model.add(Conv2D(64, kernel_size=4, padding="same"))
     model.add(BatchNormalization(momentum=0.8))
     model.add(Activation("relu"))
@@ -568,13 +570,16 @@ def build_critic(img_shape):
     model.add(BatchNormalization(momentum=0.8))
     model.add(LeakyReLU(alpha=0.2))
 
-    # model.add(Conv2D(128, kernel_size=3, strides=1, padding="same"))
-    # model.add(BatchNormalization(momentum=0.8))
-    # model.add(LeakyReLU(alpha=0.2))
+    ########
+    model.add(Conv2D(128, kernel_size=3, strides=1, padding="same"))
+    model.add(BatchNormalization(momentum=0.8))
+    model.add(LeakyReLU(alpha=0.2))
 
-    # model.add(Conv2D(256, kernel_size=3, strides=1, padding="same"))
-    # model.add(BatchNormalization(momentum=0.8))
-    # model.add(LeakyReLU(alpha=0.2))
+    model.add(Conv2D(256, kernel_size=3, strides=1, padding="same"))
+    model.add(BatchNormalization(momentum=0.8))
+    model.add(LeakyReLU(alpha=0.2))
+
+    ########
 
     model.add(Dropout(0.25))
     model.add(Flatten())
@@ -610,7 +615,7 @@ def lstm_model(no_of_layers):
 def my_model():
 
     model = Sequential()
-    model.add(Conv2D(32, (3, 3), padding='same',input_shape=(3, 28,112)))
+    model.add(Conv2D(32, (3, 3), padding='same',input_shape=(3, 28, 112)))
     model.add(Activation('relu'))
     model.add(Conv2D(64, (3, 3)))
     model.add(Activation('relu'))
