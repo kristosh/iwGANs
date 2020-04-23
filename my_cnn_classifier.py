@@ -19,7 +19,6 @@ from keras.optimizers import SGD, Adagrad, RMSprop
 
 import pdb
 from sklearn.metrics import confusion_matrix
-from confusion_matrix import plot_confusion_matrix
 from keras.utils import to_categorical
 
 from keras import backend as K
@@ -51,7 +50,7 @@ class my_cnn_classifier():
 
         self.my_obj = data_handle()
 
-        self.version = "both"
+        self.version = "real"
         self.type_of_input = "with_source"
         
         self.cM_name = "../assets/cm_"+ \

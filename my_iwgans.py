@@ -6,7 +6,7 @@ from __future__ import print_function, division
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 from keras.datasets import mnist
 from keras.layers.merge import _Merge
@@ -35,6 +35,8 @@ import cv2
 import tensorflow as tf
 from keras.callbacks import TensorBoard
 
+
+batch_size = 256
 
 def combine_images(generated_images):
 
@@ -70,7 +72,7 @@ def store_image_maps(images_db, filename):
 class RandomWeightedAverage(_Merge):
     """Provides a (random) weighted average between real and generated image samples"""
     def _merge_function(self, inputs):
-        alpha = K.random_uniform((256, 1, 1, 1))
+        alpha = K.random_uniform((batch_size, 1, 1, 1))
         return (alpha * inputs[0]) + ((1 - alpha) * inputs[1])
 
 class WGANGP():
@@ -80,8 +82,9 @@ class WGANGP():
         self.input_feats = "3dCNN"
         self.db = "creamad"
         self.learning_param = 0.0001
-        self.input_type = "with_source"
-        self.no_input_feats = 64
+        self.input_type = "without_source"
+        self._featsD = 0
+        self._noizeD = 32
 
         self.db_path = "../../GANs_models/tmp_dtst/dataAugm/"
         # Following parameter and optimizer set as recommended in paper
@@ -109,11 +112,11 @@ class WGANGP():
 
         elif self.target_mod == "face":
            
-            self.img_rows = 28
-            self.img_cols = 28
+            self.img_rows = 112
+            self.img_cols = 112
             self.channels = 3
             self.img_shape = (self.img_rows, self.img_cols, self.channels)
-            self.latent_dim = 102 #32
+            self.latent_dim = self._featsD + self._noizeD + 6
 
             # Build the generator and critic
             self.generator = build_generator_face(self.latent_dim, self.channels)
@@ -160,7 +163,7 @@ class WGANGP():
                 'categorical_crossentropy'],
             optimizer=optimizer,
             metrics=['accuracy'],
-            loss_weights=[1, 1, 5, 1])
+            loss_weights=[1, 1, 3, 1])
 
         #-------------------------------
         # Construct Computational Graph
@@ -234,12 +237,12 @@ class WGANGP():
                 _dct_ = self.obj.load_3d_dataset_rav(self.target_mod) #ravdess
             else:
                 if self.input_to_G == True:
-                    _dct_ = self.obj.load_3d_dataset_v2(self.target_mod) #crema
+                    _dct_ = self.obj.load_3d_dataset_v2(self.target_mod, self.img_rows) #crema
                 else:
-                    _dct_ = self.obj.load_3d_dataset(self.target_mod)
+                    _dct_ = self.obj.load_3d_dataset(self.target_mod, self.img_rows)
         else:
             _dct_ = self.obj.temporal_feats(self.target_mod, 1, 
-                self.no_input_feats, 
+                self._featsD, 
                 self.input_feats, 
                 self.db_path)
 
@@ -279,6 +282,7 @@ class WGANGP():
             +"_" + str(self.learning_param) \
             +"_"+str(self.input_feats) \
             +"_" + self.input_type \
+            +"_"+str(self.img_rows) \
             +"_gen_noise_feats_generator_model.yaml"
                   
         with open(model_name, "w") as yaml_file:
@@ -305,13 +309,13 @@ class WGANGP():
                 feats = _dct_["trn_fts"][idx]
 
                 # Sample generator input
-                noise = np.random.normal(0, 1, (batch_size, 32))
+                noise = np.random.normal(0, 1, (batch_size, self._noizeD))
 
                 if self.input_to_G ==True:
                     conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
                 else:
-                    #conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
-                    conditional_vector = np.concatenate([noise], axis = 1)
+                    conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
+                    #conditional_vector = np.concatenate([noise], axis = 1)
 
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, conditional_vector],[valid, fake, dummy, batch_lbls])
@@ -342,10 +346,11 @@ class WGANGP():
                     +"_"+str(self.learning_param) \
                     +"_"+str(self.input_feats) \
                     +"_"+self.input_type \
+                    +"_"+str(self.img_rows) \
                     +"_gen_noise_feats_" \
                     + file_name+"_"
 
-                #self.generator.save_weights(weight_name) 
+                self.generator.save_weights(weight_name) 
 
         _loss_obj_ = "../../GANs_models/loss_" \
             +self.input_feats \
@@ -354,6 +359,7 @@ class WGANGP():
             +"_"+str(self.learning_param) \
             +"_"+str(self.input_feats) \
             +"_"+self.input_type \
+            +"_"+str(self.img_rows) \
             +"_gen_noise_feats_" \
             + file_name+"_loss.pkl"
 
@@ -364,13 +370,13 @@ class WGANGP():
     def sample_images(self, epoch, batch_lbls, feats, batch_size, imgs, file_name):
         r, c = 5, 5
         #noise = np.random.normal(0, 1, (r * c, self.latent_dim- 6))
-        noise = np.random.normal(0, 1, (batch_size, 32))
+        noise = np.random.normal(0, 1, (batch_size, self._noizeD))
         
         if self.input_to_G == True:
             conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
         else:
-            #conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
-            conditional_vector = np.concatenate([noise], axis = 1)
+            conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
+            #conditional_vector = np.concatenate([noise], axis = 1)
 
         #conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
         gen_imgs = self.generator.predict(conditional_vector)
@@ -382,6 +388,7 @@ class WGANGP():
             +"_" + self.db \
             +"_"+str(self.input_feats) +"_"\
             + file_name  \
+            +"_"+str(self.img_rows) \
             +"_new_img_%d.png" % epoch)     
         
         store_image_maps(imgs, 
@@ -390,6 +397,8 @@ class WGANGP():
             +self.db \
             +"_"+str(self.input_feats) \
             + file_name  \
+            +"_"+self.input_type \
+            +"_"+str(self.img_rows) \
             +"_real_img_%d.png" % epoch)  
         
         fl = "../../GANs_assets/metrics/wgans/3dCNN/" \
@@ -397,6 +406,8 @@ class WGANGP():
             + str(self.input_feats) \
             +"_" + self.db + "_" \
             + file_name  \
+            +"_"+self.input_type \
+            +"_"+str(self.img_rows) \
             +"_quality_metrics_data_%d.pkl" % epoch
 
         my_gen_dict = {"real": imgs, "generated": gen_imgs, "labels": batch_lbls}
@@ -418,7 +429,7 @@ class WGANGP():
  
         self.generator.load_weights(weight_name)    
         
-        noise = np.random.normal(0, 1, (_dct_["trn_fts"].shape[0], 32))
+        noise = np.random.normal(0, 1, (_dct_["trn_fts"].shape[0], self._noizeD))
         
         pdb.set_trace()
 
@@ -435,9 +446,7 @@ class WGANGP():
             noise = np.concatenate(
                 noise,
                 axis = 1)
-        
-        pdb.set_trace()
-        
+                
         gen_train = self.generator.predict([noise])
 
         if self.target_mod == "face":
@@ -477,5 +486,5 @@ if __name__ == '__main__':
 
     wgan = WGANGP()
     wgan.train(epochs=50000, 
-        batch_size=256, 
+        batch_size=batch_size, 
         sample_interval=100)

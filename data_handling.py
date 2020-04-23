@@ -308,7 +308,7 @@ class data_handle():
 
         return _dct_
 
-    def load_3d_dataset(self, target):
+    def load_3d_dataset(self, target, rows):
 
         if target == "audio":
             
@@ -354,16 +354,17 @@ class data_handle():
                 }
 
             return _dct_
-
         
         elif target == "face":
-            
-            face_path_train = "../../GANs_models/cremad/train_cremad.pkl"
-            face_path_test = "../../GANs_models/cremad/test_cremad.pkl"
+            if rows == 28:          
+                face_path_train = "../../GANs_models/cremad/test_cremad.pkl"
+                face_path_test = "../../GANs_models/cremad/test_cremad.pkl"
+            elif rows == 112:
+                face_path_train = "../../GANs_models/cremad/test_cremad_big.pkl"
+                face_path_test = "../../GANs_models/cremad/test_cremad_big.pkl" 
 
             _dt_ = self.load_obj(face_path_train)
-
-           
+      
             trn_fts= _dt_["specs_train"]
             trn_trg = _dt_["face_train"]
             trn_lbls = _dt_["train_lbls"]
@@ -412,7 +413,7 @@ class data_handle():
             return _dct_
 
    
-    def load_3d_dataset_v2(self, target):
+    def load_3d_dataset_v2(self, target, rows):
            
         path = "../models/2dCNN_features.pkl"
 
