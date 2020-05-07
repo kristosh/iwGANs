@@ -6,7 +6,7 @@ from __future__ import print_function, division
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 
 from keras.datasets import mnist
 from keras.layers.merge import _Merge
@@ -22,7 +22,6 @@ from keras.models import model_from_yaml
 
 import keras.backend as K
 import tensorflow.keras as keras
-
 import matplotlib.pyplot as plt
 
 import sys
@@ -31,44 +30,16 @@ import numpy as np
 
 from data_handling import *
 from keras_models import *
+from _mtds_fWGANs_ import *
+
 import cv2 
 import tensorflow as tf
 from keras.callbacks import TensorBoard
 
+# batch size for the whole network.
+batch_size = 64
 
-batch_size = 256
-
-def combine_images(generated_images):
-
-    generated_images =  np.transpose(generated_images , (0, 3, 1, 2))
-
-    num = generated_images.shape[0]
-    width = int(math.sqrt(num))
-    height = int(math.ceil(float(num)/width))
-    shape = generated_images.shape[2:]
-    image = np.zeros((3,(height+3)*shape[0], (width+3)*shape[1]),
-                     dtype=generated_images.dtype)
-
-    for index, img in enumerate(generated_images):
-
-        new_shape = (img.shape[0], img.shape[1]+ 4, img.shape[2] + 4)
-        img_ = np.zeros(new_shape)
-        img_[:, 2:  2+img.shape[1], 2:  2+img.shape[2]] = img
-
-        i = int(index/width)
-        j = index % width
-        image[:, i*new_shape[1]: (i+1)*new_shape[1], j*new_shape[2]: (j+1)*new_shape[2]] = img_[:, :, :]
-    return image
-
-
-def store_image_maps(images_db, filename):
-    image = combine_images(images_db)
-    image = image * 127.5 + 127.5
-    image = np.swapaxes(image, 0, 1)
-    image = np.swapaxes(image, 1, 2)
-    cv2.imwrite(filename,image)
-
-
+# it is used for the implemenaiton of gradient penalty for the Wasserstein loss.
 class RandomWeightedAverage(_Merge):
     """Provides a (random) weighted average between real and generated image samples"""
     def _merge_function(self, inputs):
@@ -77,7 +48,9 @@ class RandomWeightedAverage(_Merge):
 
 class WGANGP():
     def __init__(self):
-            
+        
+        self.mtds = MTDS()
+
         self.target_mod = "face"
         self.input_feats = "3dCNN"
         self.db = "creamad"
@@ -86,6 +59,8 @@ class WGANGP():
         self._featsD = 0
         self._noizeD = 32
 
+        self.face_sequence = False
+        self.comment = ""
         self.db_path = "../../GANs_models/tmp_dtst/dataAugm/"
         # Following parameter and optimizer set as recommended in paper
         self.n_critic = 15
@@ -112,16 +87,22 @@ class WGANGP():
 
         elif self.target_mod == "face":
            
-            self.img_rows = 112
-            self.img_cols = 112
-            self.channels = 3
+            if self.face_sequence == False:
+                self.img_rows = 28
+                self.img_cols = 28
+                self.channels = 3
+            else:
+                self.img_rows = 28
+                self.img_cols = 280
+                self.channels = 3
+
             self.img_shape = (self.img_rows, self.img_cols, self.channels)
             self.latent_dim = self._featsD + self._noizeD + 6
 
             # Build the generator and critic
-            self.generator = build_generator_face(self.latent_dim, self.channels)
+            self.generator = build_generator_face_v(self.latent_dim, self.channels, self.face_sequence)
             #self.generator = self.build_generator_old()
-            self.critic = build_critic(self.img_shape)
+            self.critic = build_critic_v(self.img_shape, self.face_sequence)
 
         #-------------------------------
         # Construct Computational Graph
@@ -163,7 +144,7 @@ class WGANGP():
                 'categorical_crossentropy'],
             optimizer=optimizer,
             metrics=['accuracy'],
-            loss_weights=[1, 1, 3, 1])
+            loss_weights=[1, 1, 3, 5])
 
         #-------------------------------
         # Construct Computational Graph
@@ -282,6 +263,7 @@ class WGANGP():
             +"_" + str(self.learning_param) \
             +"_"+str(self.input_feats) \
             +"_" + self.input_type \
+            +"_" + self.comment \
             +"_"+str(self.img_rows) \
             +"_gen_noise_feats_generator_model.yaml"
                   
@@ -292,22 +274,19 @@ class WGANGP():
             yaml_file.write(model_yaml_cr)
 
         my_loss = []
-        #self.gen_data_iwGANs(_dct_, file_name)
+        self.mtds._gen_datwGANs(_dct_, file_name, self)
+        
         for epoch in range(epochs):
-
-            if epoch == 50000:
-                self.gen_data_iwGANs(_dct_, file_name)
-
             for _ in range(self.n_critic):
                 # ---------------------
                 #  Train Discriminator
                 # ---------------------
                 # Select a random batch of images
                 idx = np.random.randint(0, _dct_["trn_trg"].shape[0], batch_size)
-                imgs = _dct_["trn_trg"][idx]
+                imgs = self.mtds._cmb_ten_fr_(_dct_["trn_trg"][idx])
                 batch_lbls = _dct_["trn_lbls"][idx]
                 feats = _dct_["trn_fts"][idx]
-
+                
                 # Sample generator input
                 noise = np.random.normal(0, 1, (batch_size, self._noizeD))
 
@@ -316,7 +295,7 @@ class WGANGP():
                 else:
                     conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
                     #conditional_vector = np.concatenate([noise], axis = 1)
-
+                
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, conditional_vector],[valid, fake, dummy, batch_lbls])
                 my_loss.append(d_loss)
@@ -346,6 +325,7 @@ class WGANGP():
                     +"_"+str(self.learning_param) \
                     +"_"+str(self.input_feats) \
                     +"_"+self.input_type \
+                    +"_" + self.comment \
                     +"_"+str(self.img_rows) \
                     +"_gen_noise_feats_" \
                     + file_name+"_"
@@ -359,6 +339,7 @@ class WGANGP():
             +"_"+str(self.learning_param) \
             +"_"+str(self.input_feats) \
             +"_"+self.input_type \
+            +"_" + self.comment \
             +"_"+str(self.img_rows) \
             +"_gen_noise_feats_" \
             + file_name+"_loss.pkl"
@@ -382,22 +363,25 @@ class WGANGP():
         gen_imgs = self.generator.predict(conditional_vector)
         # Finally store the images to the local path
         
-        store_image_maps(gen_imgs, 
+        self.mtds._str_imgs_(gen_imgs, 
             "../../GANs_assets/generated_imgs/wgans/" \
             +self.input_feats+"_noise_lbls_"  \
             +"_" + self.db \
             +"_"+str(self.input_feats) +"_"\
-            + file_name  \
+            + file_name \
+            +"_"+self.input_type \
+            +"_" + self.comment \
             +"_"+str(self.img_rows) \
             +"_new_img_%d.png" % epoch)     
         
-        store_image_maps(imgs, 
+        self.mtds._str_imgs_(imgs, 
             "../../GANs_assets/generated_imgs/wgans/" \
             +self.input_feats+"_noise_lbls_"  \
             +self.db \
             +"_"+str(self.input_feats) \
             + file_name  \
             +"_"+self.input_type \
+            +"_" + self.comment \
             +"_"+str(self.img_rows) \
             +"_real_img_%d.png" % epoch)  
         
@@ -407,83 +391,15 @@ class WGANGP():
             +"_" + self.db + "_" \
             + file_name  \
             +"_"+self.input_type \
+            +"_" + self.comment \
             +"_"+str(self.img_rows) \
             +"_quality_metrics_data_%d.pkl" % epoch
 
         my_gen_dict = {"real": imgs, "generated": gen_imgs, "labels": batch_lbls}
         self.obj.store_obj(fl, my_gen_dict)
-        
-
-    # Generate new samples using the trained Generator.
-    def gen_data_iwGANs(self, _dct_, file_name): 
-
-        weight_name = "../../GANs_models/" \
-            +self.input_feats \
-            +"_" + self.db \
-            +"_"+str(self.latent_dim) \
-            +"_"+str(self.learning_param) \
-            +"_"+str(self.input_feats) \
-            +"_"+self.input_type \
-            +"_gen_noise_feats_" \
-            + file_name+"_"
- 
-        self.generator.load_weights(weight_name)    
-        
-        noise = np.random.normal(0, 1, (_dct_["trn_fts"].shape[0], self._noizeD))
-        
-        pdb.set_trace()
-
-        if self.input_to_G == True:
-            noise = np.concatenate([_dct_["trn_fts"], 
-                noise, 
-                _dct_["trn_lbls"]], 
-                axis = 1)
-        else:
-            # noise = np.concatenate([
-            #     noise, 
-            #     _dct_["trn_lbls"]], 
-            #     axis = 1)
-            noise = np.concatenate(
-                noise,
-                axis = 1)
-                
-        gen_train = self.generator.predict([noise])
-
-        if self.target_mod == "face":
-
-            gen_data = {"gen_train": gen_train,
-                "lbls_train": _dct_["trn_lbls"]}
-
-            stored_name = "../../GANs_models/" \
-                    +self.input_feats \
-                    +"_" + self.db \
-                    +"_generated" \
-                    +"_"+self.input_type \
-                    +".pkl"
-            
-            pdb.set_trace()
-            self.obj.store_obj(stored_name, gen_data)
-
-        else:
-            for index in range(0, 2):
-                
-                gen_data = {"gen_train": gen_train[75000*index:(75000+ 75000*index)], 
-                    "lbls_train": _dct_["tst_lbls"][75000*index:(75000+ 75000*index)]}
-
-                stored_name = "../../GANs_models/" \
-                    +self.input_feats \
-                    +"_" + self.db \
-                    +"_generated" \
-                    +"_"+self.input_type +"_"\
-                    +str(index) \
-                    +".pkl"
-
-                self.obj.store_obj(stored_name, gen_data)
-                gen_data = None  
 
 
 if __name__ == '__main__':
-
     wgan = WGANGP()
     wgan.train(epochs=50000, 
         batch_size=batch_size, 

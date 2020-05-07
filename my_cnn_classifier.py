@@ -230,9 +230,7 @@ class my_cnn_classifier():
         ret = (y_pred.argmax(axis=1)+1)
         test_labels_ = (test_labels.argmax(axis=1)+1)
         cm = confusion_matrix(test_labels_, ret)   
-        class_names = ["hap", "sad", "ang", "fea", "dis", "neu"]
-        #plot_confusion_matrix(cm, filename, class_names)
-
+        #class_names = ["hap", "sad", "ang", "fea", "dis", "neu"]
         return cm
         
     

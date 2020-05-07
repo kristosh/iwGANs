@@ -210,7 +210,6 @@ class data_handle():
         return _dct_
 
 
-
     def temporal_feats(
             self,
             target, 
@@ -357,14 +356,14 @@ class data_handle():
         
         elif target == "face":
             if rows == 28:          
-                face_path_train = "../../GANs_models/cremad/test_cremad.pkl"
-                face_path_test = "../../GANs_models/cremad/test_cremad.pkl"
+                face_path_train = "../../GANs_models/cremad/train_cremad_middle.pkl"
+                face_path_test = "../../GANs_models/cremad/test_cremad_middle.pkl"
             elif rows == 112:
                 face_path_train = "../../GANs_models/cremad/test_cremad_big.pkl"
                 face_path_test = "../../GANs_models/cremad/test_cremad_big.pkl" 
 
             _dt_ = self.load_obj(face_path_train)
-      
+
             trn_fts= _dt_["specs_train"]
             trn_trg = _dt_["face_train"]
             trn_lbls = _dt_["train_lbls"]
@@ -398,7 +397,7 @@ class data_handle():
 
             trn_lbls = self._sft_crisp_lbl_(trn_lbls)
             tst_lbls = self._sft_crisp_lbl_(tst_lbls)
-
+                        
             _dct_ = {"trn_fts": trn_fts, 
                 "trn_trg": trn_trg, 
                 "trn_lbls": trn_lbls,
