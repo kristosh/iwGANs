@@ -397,7 +397,7 @@ class data_handle():
 
             trn_lbls = self._sft_crisp_lbl_(trn_lbls)
             tst_lbls = self._sft_crisp_lbl_(tst_lbls)
-                        
+
             _dct_ = {"trn_fts": trn_fts, 
                 "trn_trg": trn_trg, 
                 "trn_lbls": trn_lbls,

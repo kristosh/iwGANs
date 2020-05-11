@@ -502,26 +502,31 @@ def build_generator_face_v(latent_dim, channels, face_sequence):
     model.add(Conv2D(128, kernel_size=4, padding="same"))
     model.add(BatchNormalization(momentum=0.8))
     model.add(Activation("relu"))
+    model.add(Dropout(0.2))
 
     model.add(UpSampling2D())
     model.add(Conv2D(64, kernel_size=4, padding="same"))
     model.add(BatchNormalization(momentum=0.8))
     model.add(Activation("relu"))
+    model.add(Dropout(0.2))
 
     if face_sequence == False:
         model.add(Conv2D(64, kernel_size=4, padding="same"))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation("relu"))
+        model.add(Dropout(0.2))
 
         model.add(Conv2D(64, kernel_size=4, padding="same"))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation("relu"))
+        model.add(Dropout(0.2))
 
     else:         
         model.add(UpSampling2D(size=(1, 2)))
         model.add(Conv2D(3, kernel_size=4, padding="same"))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation("relu"))
+        model.add(Dropout(0.2))
 
         # model.add(Flatten())
         # model.add(Dense(2940))
@@ -532,16 +537,19 @@ def build_generator_face_v(latent_dim, channels, face_sequence):
         model.add(Conv2D(64, kernel_size=4, padding="same"))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation("relu"))
+        model.add(Dropout(0.2))
 
         model.add(UpSampling2D(size=(1, 2)))
         model.add(Conv2D(64, kernel_size=4, padding="same"))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation("relu"))
+        model.add(Dropout(0.2))
 
         model.add(UpSampling2D(size=(1, 2)))
         model.add(Conv2D(64, kernel_size=4, padding="same"))
         model.add(BatchNormalization(momentum=0.8))
         model.add(Activation("relu"))
+        model.add(Dropout(0.2))
 
     model.add(Conv2D(channels, kernel_size=4, padding="same"))
     model.add(Activation("tanh"))

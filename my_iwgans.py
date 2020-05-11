@@ -6,7 +6,7 @@ from __future__ import print_function, division
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 from keras.datasets import mnist
 from keras.layers.merge import _Merge
@@ -37,7 +37,7 @@ import tensorflow as tf
 from keras.callbacks import TensorBoard
 
 # batch size for the whole network.
-batch_size = 64
+batch_size = 256
 
 # it is used for the implemenaiton of gradient penalty for the Wasserstein loss.
 class RandomWeightedAverage(_Merge):
@@ -55,15 +55,15 @@ class WGANGP():
         self.input_feats = "3dCNN"
         self.db = "creamad"
         self.learning_param = 0.0001
-        self.input_type = "without_source"
-        self._featsD = 0
-        self._noizeD = 32
+        self.input_type = "with_source"
+        self._featsD = 64
+        self._noizeD = 0
 
         self.face_sequence = False
-        self.comment = ""
+        self.comment = "with_noise"
         self.db_path = "../../GANs_models/tmp_dtst/dataAugm/"
         # Following parameter and optimizer set as recommended in paper
-        self.n_critic = 15
+        self.n_critic = 5
         optimizer = RMSprop(lr=self.learning_param)
 
         if self.input_type == "with_source":
@@ -144,7 +144,7 @@ class WGANGP():
                 'categorical_crossentropy'],
             optimizer=optimizer,
             metrics=['accuracy'],
-            loss_weights=[1, 1, 3, 5])
+            loss_weights=[1, 1, 3, 1])
 
         #-------------------------------
         # Construct Computational Graph
@@ -205,6 +205,21 @@ class WGANGP():
         return loaded_model
 
 
+    def load_spec_classificer(self):
+        
+        pdb.set_trace()
+        input_shape = (3, 112, 28)
+        model = cnnModel(input_shape, 6)
+        model.compile(optimizer= RMSprop(lr=0.0001, 
+            decay=1e-6), 
+            loss='categorical_crossentropy', 
+            metrics=['accuracy'])
+
+        model.load_weights("../models/spec_classifier")
+
+        return model
+
+
     def train(self, epochs, batch_size, sample_interval=50):
         
         # my_model = self.load_model_from_yaml(
@@ -228,18 +243,10 @@ class WGANGP():
                 self.db_path)
 
         file_name = self.target_mod
-        lbls_train = _dct_["trn_lbls"] 
-
         # Adversarial ground truths
         valid = -np.ones((batch_size, 1))
         fake =  np.ones((batch_size, 1))
         dummy = np.zeros((batch_size, 1)) # Dummy gt for gradient penalty
-        
-        try:
-            del valid_target
-            del test_target
-        except Exception as e:
-            print("Temporal version")
 
         # Create the TensorBoard callback,
         # which we will drive manually
@@ -273,8 +280,9 @@ class WGANGP():
         with open(model_name, "w") as yaml_file:
             yaml_file.write(model_yaml_cr)
 
-        my_loss = []
-        self.mtds._gen_datwGANs(_dct_, file_name, self)
+        my_loss_trn = []
+        my_loss_vld = []
+        #self.mtds._gen_datwGANs(_dct_, file_name, self)
         
         for epoch in range(epochs):
             for _ in range(self.n_critic):
@@ -283,30 +291,51 @@ class WGANGP():
                 # ---------------------
                 # Select a random batch of images
                 idx = np.random.randint(0, _dct_["trn_trg"].shape[0], batch_size)
-                imgs = self.mtds._cmb_ten_fr_(_dct_["trn_trg"][idx])
+
+                if self.face_sequence == True:
+                    imgs = self.mtds._cmb_ten_fr_(_dct_["trn_trg"][idx])
+                else:
+                    imgs = _dct_["trn_trg"][idx]
+                
                 batch_lbls = _dct_["trn_lbls"][idx]
                 feats = _dct_["trn_fts"][idx]
                 
+                idx = np.random.randint(0, _dct_["tst_trg"].shape[0], batch_size)
+                imgs_tst = _dct_["tst_trg"][idx]
+                batch_lbls_tst = _dct_["tst_lbls"][idx]
+                feats_tst = _dct_["tst_fts"][idx]
+
                 # Sample generator input
                 noise = np.random.normal(0, 1, (batch_size, self._noizeD))
 
                 if self.input_to_G ==True:
                     conditional_vector = np.concatenate([feats, noise, batch_lbls], axis = 1)
+                    cndl_tst_vector = np.concatenate([feats_tst, noise, batch_lbls_tst], axis = 1)
                 else:
                     conditional_vector = np.concatenate([noise, batch_lbls], axis = 1)
+                    cndl_tst_vector = np.concatenate([noise, batch_lbls_tst], axis = 1)
                     #conditional_vector = np.concatenate([noise], axis = 1)
                 
                 # Train the critic
                 d_loss = self.critic_model.train_on_batch([imgs, conditional_vector],[valid, fake, dummy, batch_lbls])
-                my_loss.append(d_loss)
+                d_loss_vld = self.critic_model.evaluate([imgs_tst, cndl_tst_vector],[valid, fake, dummy, batch_lbls_tst], batch_size = 256)
             # ---------------------
             #  Train Generator
             # ---------------------
             g_loss = self.generator_model.train_on_batch(conditional_vector, [valid, batch_lbls])
+            #g_loss_vld = self.generator_model.train_on_batch(cndl_tst_vector, [valid, batch_lbls_tst])
             
-            tensorboard.on_epoch_end(epoch, self.named_logs(self.generator_model, g_loss))           
+            tensorboard.on_epoch_end(epoch, self.named_logs(self.generator_model, g_loss))      
+
+            print ("===================================================")
+            print ("training loss ...")
             print (d_loss)
+            print ("validation loss ... " + str(d_loss_vld[8]))
+            print ("===================================================")
             #print ("%d [D loss: %f] [G loss: %f]" % (epoch, d_loss[0], g_loss[0]))
+
+            my_loss_trn.append(d_loss)
+            my_loss_vld.append(d_loss_vld)
 
             # If at save interval => save generated image samples
             
@@ -344,7 +373,9 @@ class WGANGP():
             +"_gen_noise_feats_" \
             + file_name+"_loss.pkl"
 
-        self.obj.store_obj(_loss_obj_, my_loss)
+        pdb.set_trace()
+        loss_dict = {"train_loss": my_loss_trn, "validation_loss": my_loss_vld}
+        self.obj.store_obj(_loss_obj_, loss_dict)
 
 
     # Store generated images.

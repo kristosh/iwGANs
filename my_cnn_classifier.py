@@ -50,7 +50,7 @@ class my_cnn_classifier():
 
         self.my_obj = data_handle()
 
-        self.version = "real"
+        self.version = "both"
         self.type_of_input = "with_source"
         
         self.cM_name = "../assets/cm_"+ \
@@ -64,7 +64,7 @@ class my_cnn_classifier():
     def generated_faces (self, type_of_feats):
 
         path = "../../GANs_models/cremad/"
-        _gFile_ = "3dCNN_creamad_generated_"+self.type_of_input+".pkl"
+        _gFile_ = "generated_2dCNN_creamad_70_0.0001_3dCNN_with_source__28_gen_without_noise_feats_face_.pkl"
 
         _dct_ = self.my_obj.load_obj(path + _gFile_)
 
@@ -96,7 +96,7 @@ class my_cnn_classifier():
 
         if self.target_mod == "face":
            
-            _dct_  = self.my_obj.load_3d_dataset(self.target_mod)
+            _dct_  = self.my_obj.load_3d_dataset(self.target_mod, 28)
 
             real_train = _dct_["trn_trg"].transpose(0, 3, 1, 2)
 
@@ -119,11 +119,11 @@ class my_cnn_classifier():
                 train_labels =  np.concatenate((_dct_["trn_lbls"],  gen_lbls), axis=0)
             del _dct_, _dctG_
         else:
-            #_dct_  = self.my_obj.load_3d_dataset_rav("audio")
+            _dct_  = self.my_obj.load_3d_dataset(self.target_mod, 28)
             train_target = _dct_["trn_fts"].transpose(0, 3, 1, 2)
-            test_target = _dct_["tst_fts"].transpose(0, 3, 1, 2)
+            #test_target = _dct_["tst_fts"].transpose(0, 3, 1, 2)
             #gen_1, gen_2, gen_lbls_1, gen_lbls_2 = self.load_gen_data(self.type_of_features)
-            #train_target = train_target[:(gen_1.shape[0]+ gen_1.shape[1])] #.train_data
+            train_target = train_target[:(gen_1.shape[0]+ gen_1.shape[1])] #.train_data
             #train_labels = _dct_["trn_lbls"][:(gen_1.shape[0]+ gen_1.shape[1])]
             #train_data = np.concatenate((train_target,  gen_1), axis=0)
             #train_labels = np.concatenate((train_labels, gen_lbls_1), axis=0)    
@@ -133,7 +133,7 @@ class my_cnn_classifier():
             test_data = test_target 
             test_labels = _dct_["tst_lbls"]
             del _dct_
-            del gen_1, gen_2
+            #del gen_1, gen_2
 
         # Find the unique numbers from the train labels  
         print('Total number of outputs : ', self.nClasses)
@@ -141,6 +141,7 @@ class my_cnn_classifier():
         nDims, nRows,nCols = train_data.shape[1:]
         input_shape = (nDims, nRows, nCols)
 
+        pdb.set_trace()
         # Change to float datatype
         train_data = train_data.astype('float32')
         test_data = test_data.astype('float32')

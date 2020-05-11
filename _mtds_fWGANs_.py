@@ -31,14 +31,12 @@ class MTDS():
 
         generated_images =  np.transpose(generated_images , (0, 3, 1, 2))
 
-        pdb.set_trace()
         num = generated_images.shape[0]
         width = int(math.sqrt(num))
         height = int(math.ceil(float(num)/width))
         shape = generated_images.shape[2:]
         image = np.zeros((3,(height+30)*shape[0], (width+30)*shape[1]),dtype=generated_images.dtype)
 
-        pdb.set_trace()
         for index, img in enumerate(generated_images):
 
             new_shape = (img.shape[0], 
@@ -79,11 +77,11 @@ class MTDS():
             +"_gen_noise_feats_" \
             + file_name+"_"
 
-        weight_name = "../../GANs_models/"+\
-            "3dCNN_creamad_38_0.0001_"+\
-            "3dCNN_without_source_"+\
-            "tenMiddle_28_gen_noise_feats_face_"
-
+        # weight_name = "../../GANs_models/"+\
+        #     "3dCNN_creamad_38_0.0001_"+\
+        #     "3dCNN_without_source_"+\
+        #     "tenMiddle_28_gen_noise_feats_face_"
+        pdb.set_trace()
         _obj_.generator.load_weights(weight_name)    
         
         noise = np.random.normal(0, 1, (_dct_["trn_fts"].shape[0], _obj_._noizeD))
@@ -119,7 +117,8 @@ class MTDS():
                     + file_name+"_" \
                     +".pkl"
             
-            self._str_imgs_(gen_train[:1600], "faces.png")
+            pdb.set_trace()
+            #self._str_imgs_(gen_train[:1600], "faces.png")
             _obj_.obj.store_obj(stored_name, gen_data)
 
         else:
